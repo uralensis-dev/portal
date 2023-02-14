@@ -171,6 +171,165 @@ class Institute extends CI_Controller {
 	 *
 	 * @return void
 	 */
+
+	 public function upload_checklist_docs_form() 
+	 {
+		 $user_id = $this->ion_auth->user()->row()->id;
+		 $user_name = $this->ion_auth->user()->row()->username;
+		 //$hospital_group_id = $this->ion_auth->get_users_groups($user_id)->row()->id;
+ 
+		 if (isset($_FILES['upload_doc']) && count($_FILES['upload_doc']['name']) > 0) 
+		 {
+			 $ref_key = $user_id;
+ 
+			 $upload_doc = $this->do_upload_lab_files('upload_doc', $ref_key);
+			
+ 
+			 if (!empty($upload_doc['error_upload'])) 
+			 {
+
+				 $error = array('upload_error' => $this->upload->display_errors());
+				 $this->session->set_flashdata('upload_error', $error['upload_error']);
+				 //echo json_encode(['error' => true]);exit;
+			 }
+			 $dataArr = $upload_doc['success'];
+			 $count = 0;
+			 foreach ($dataArr as $data)
+			 {
+				 $checklist_file_name = $data['file_name'];
+				 $file_path = "clinic_uploads/" . $checklist_file_name;
+				 $file_type = $_POST['file_type'];
+ 
+				 if (!empty($checklist_file_name)) 
+				 {
+					 $sop_upload_data = array(
+						 'file_name' => !empty($checklist_file_name) ? $checklist_file_name : '',
+						 'file_path' => !empty($file_path) ? $file_path : '',
+						 'file_type' => !empty($file_type) ? $file_type : '',
+						 'uploaded_by' => !empty($user_id) ? $user_id : '',
+						 'uploaded_at' => date('Y-m-d H:i:s')
+					 );
+					 $tempCount = $this->db->insert('uralensis_upload_forms', $sop_upload_data);
+					 
+					 if($tempCount)
+					 {
+						 $count++;
+					 }
+					 $file_name=explode(".",@$checklist_file_name);
+					 
+					 $reqArr = $this->db->get_where('request', ['lab_number'=>$file_name[0]])->result_array();
+					 if(count($reqArr) > 0 && !empty($reqArr[0]['lab_number']))
+					 {
+						 $record_id = $reqArr[0]['uralensis_request_id'];
+						 $file_tag = '';
+						 
+						 $data = array(
+					 'file_name' => $data['file_name'],
+					 'title' => $file_name[0],
+					 'file_path' => $data['full_path'],
+					 'file_ext' => $data['file_ext'],
+					 'is_image' => $data['is_image'],
+					 'user' => $user_name,
+					 'user_id' => $user_id,
+					 'record_id' => $record_id,
+					 'file_tag'=>'request'
+					 );
+					 $this->db->insert('files', $data);
+						 
+					 }
+				 }
+			 }
+ 
+			 if($count > 0){
+				 $msg = ($count == 1) ? ' file is ' : ' files are ';
+				 $this->session->set_flashdata('upload_success', $count.$msg.'upload successfully.');
+			 }else{
+				 $this->session->set_flashdata('upload_error', 'Something went wrong!');
+			 }
+			 redirect('Institute');
+			//  echo json_encode(['success' => true]);exit;
+		 }
+	 }
+
+	 public function do_upload_lab_files($lab_file_name, $ref_key, $folderName='') {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $config['upload_path'] = './clinic_uploads/'.$folderName;
+        $config['allowed_types'] = 'pdf|doc|xls|xlsx|png|jpeg|jpg|docx|otd|odtx|exls|exl';
+        $config['max_size'] = 2040000;
+        $config['overwrite'] = TRUE;
+        $file = $_FILES;
+        $errorUploadType = '';
+        $filesCount = count($_FILES[$lab_file_name]['name']);
+        for($i = 0; $i < $filesCount; $i++)
+		{
+            $_FILES['upload_doc']['name']     = $file[$lab_file_name]['name'][$i];
+            $_FILES['upload_doc']['type']     = $file[$lab_file_name]['type'][$i];
+            $_FILES['upload_doc']['tmp_name'] = $file[$lab_file_name]['tmp_name'][$i];
+            $_FILES['upload_doc']['error']    = $file[$lab_file_name]['error'][$i];
+            $_FILES['upload_doc']['size']     = $file[$lab_file_name]['size'][$i];
+
+            $this->load->library('upload', $config);
+            $this->upload->initialize($config);
+
+            if($this->upload->do_upload('upload_doc'))
+			{
+                $fileData[] = $this->upload->data();
+            }else{
+                $errorUploadType .= $_FILES['upload_doc']['name'].' | ';
+            }
+        }
+
+        return ['error_upload' => $errorUploadType, 'success' => $fileData];
+            /*foreach ($_FILES[$lab_file_name]['name'] as $key => $image) {
+                $_FILES['images']['name']       = $_FILES[$lab_file_name]['name'][$key];
+                $_FILES['images']['type']       = $_FILES[$lab_file_name]['type'][$key];
+                $_FILES['images']['tmp_name']   = $_FILES[$lab_file_name]['tmp_name'][$key];
+                $_FILES['images']['error']      = $_FILES[$lab_file_name]['error'][$key];
+                $_FILES['images']['size']       = $_FILES[$lab_file_name]['size'][$key];
+
+                $config['file_name'] = $ref_key . '-' . $_FILES[$lab_file_name]['name'];
+
+                $this->load->library('upload', $config);
+                $this->upload->initialize($config);
+
+                if ($this->upload->do_upload($image)) {
+                    $this->upload->data();
+                } else {
+                    return false;
+                }
+            }
+            return TRUE;*/
+
+        /*$return = [];
+        $total = count($_FILES[$lab_file_name]['name']);
+        for( $i=0 ; $i < $total ; $i++ ) {
+            $new_name = $ref_key . '-' . $_FILES[$lab_file_name]['name'][$i];
+            $config['file_name'] = $new_name;
+            $this->load->library('upload', $config);
+            $this->upload->initialize($config);
+            if (!$this->upload->do_upload($lab_file_name)) {
+                return FALSE;
+            } else {
+                $return[] = $this->upload->data();
+                //return TRUE;
+            }
+        }
+        return $return;*/
+
+        /*$new_name = $ref_key . '-' . $_FILES[$lab_file_name]['name'];
+        $config['file_name'] = $new_name;
+        $this->load->library('upload', $config);
+        $this->upload->initialize($config);
+        if (!$this->upload->do_upload($lab_file_name)) {
+            return FALSE;
+        } else {
+            return TRUE;
+        }*/
+    }
+
+
 	public function upload_docs_form() {
 		$user_id = $this->ion_auth->user()->row()->id;
 		$hospital_group_id = $this->ion_auth->get_users_groups($user_id)->row()->id;

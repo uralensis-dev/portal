@@ -620,6 +620,7 @@
 					<ul class="nav nav-tabs nav-tabs-solid ">
                         <li class="nav-item"><a class="nav-link active" href="#Sops" data-toggle="tab">SOP's</a></li>
                         <li class="nav-item"><a class="nav-link " href="#requestForm" data-toggle="tab">Request Form</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#checkList" data-toggle="tab">Check List</a></li>
 					</ul>
 					<div class="tab-content" style="padding: 0px;">  
                         <div class="tab-pane active" id="Sops">
@@ -742,6 +743,66 @@
 								</div>
 								<div class="card-footer">
 									<a href="<?= base_url('documents'); ?>" class="d-block">View all</a>
+								</div>
+							</div>
+						</div>
+                        <div class="tab-pane" id="checkList">
+							<div class="card card-table flex-fill" style="height: 404px; overflow-y: hide; border: 0;">
+								<div class="card-header">
+									<h3 class="card-title mb-0">Check List
+										<i class="fa fa-cloud-upload pull-right" data-toggle="modal" data-target="#upload_check_list" style="color:green; margin-left:10px"></i>
+									</h3>
+								</div>
+								<div class="card-body">
+									<div class="table-responsive">
+										<table class="table table-striped custom-table mb-0">
+											<thead>
+												<tr>
+													<th>File</th>
+                                                    <th>Request</th>
+													<th>Uploaded By</th>
+													<th>Uploaded On</th>
+													<th>Action</th>
+												</tr>
+											</thead>
+											<tbody>
+											<?php if (!empty($upload_docs)) 
+											{
+												foreach ($upload_docs as $row) {
+													if($row->file_type == "Check List"){
+														?>
+														<tr>
+															<td><a href="javascript:void(0)" data-toggle="modal" data-target="#view_doc" onclick="embed_document('<?= base_url($row->file_path); ?>')"><i class="fa fa-eye m-r-5"></i><?=$row->file_name; ?></a></td>
+															<td></td>
+															<td><?= $row->last_name." ".$row->first_name; ?></td>
+															<td><?= date('d/m/Y H:i:s', strtotime($row->uploaded_at)); ?></td>
+															<td class="text-right">
+                                                            <?php if($row->group_name == 'admin'){ ?>
+                                                                    <div class="dropdown dropdown-action">
+                                                                        <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="material-icons">more_vert</i></a>
+                                                                        <div class="dropdown-menu dropdown-menu-right" style="width: 100px;">
+                                                                            <a class="dropdown-item" href="javascript:void(0)" onclick="embed_document_track('<?= $row->id; ?>', '<?= base_url($row->file_path); ?>')"><i class="fa fa-eye m-r-5"></i> View </a>
+                                                                        </div>
+                                                                    </div>
+                                                                <?php } else { ?>
+                                                                    <div class="dropdown dropdown-action">
+                                                                        <a href="#" class="action-icon dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="material-icons">more_vert</i></a>
+                                                                        <div class="dropdown-menu dropdown-menu-right" style="width: 100px;">
+                                                                        <a class="dropdown-item" data-toggle="modal" data-target="#view_doc" onclick="embed_document('<?php echo base_url($row->file_path);?>')"><i class="fa fa-eye m-r-5"></i> View </a>
+                                                                        <a class="dropdown-item" href="<?php echo base_url('Institute/download_forms/'.$row->file_name); ?>"><i class="fa fa-cloud-download m-r-5"></i> Download</a>
+                                                                        <a class="dropdown-item" href="<?php echo base_url('Institute/delete_upload_docs/'.$row->id); ?>"><i class="fa fa-trash-o m-r-5"></i> Delete</a>
+                                                                        </div>
+                                                                    </div>
+                                                                <?php } ?>
+															</td>
+														</tr>
+													<?php } } } ?>
+											</tbody>
+										</table>
+									</div>
+								</div>
+								<div class="card-footer">
+									<a href="javascript:;" class="d-block">View all</a>
 								</div>
 							</div>
 						</div>
@@ -1291,6 +1352,31 @@
                                     </div>
                                 </div>
 
+                                <div id="upload_check_list" class="modal custom-modal fade" role="dialog">
+                                    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Upload Check List</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true"><i class="fa fa-times"></i></span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <?php echo form_open_multipart('Institute/upload_checklist_docs_form', array('id' => 'upload_checklist_form', 'name' => 'upload_checklist_form')); ?>
+                                                    <input type="hidden" name="file_type" value="Check List" require>
+                                                    <div class="form-group">
+                                                        <label>Upload Files</label>
+                                                        <input class="form-control" name="upload_doc[]" type="file" multiple>
+                                                    </div>
+                                                    <div class="submit-section">
+                                                        <button class="btn btn-primary submit-btn" type="submit">Submit</button>
+                                                    </div>
+                                                <?php echo form_close(); ?>                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div id="upload_request_forms" class="modal custom-modal fade" role="dialog">
                                     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                                         <div class="modal-content">
@@ -1785,7 +1871,29 @@
 }
 }
 ?>
-
+<div class="modal custom-modal fade" id="delete_check_list_modal" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="form-header">
+                    <h3>Delete Check List Item</h3>
+                    <p>Are you sure want to delete?</p>
+                </div>
+                <div class="modal-btn delete-action">
+                    <div class="row">
+                        <div class="col-6">
+                            <a href="javascript:void(0);" class="btn btn-primary continue-btn check-list-delete-btn">Delete</a>
+                        </div>
+                        <div class="col-6">
+                            <a href="javascript:void(0);" data-dismiss="modal"
+                                class="btn btn-primary cancel-btn">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <script type="text/javascript">
     function submit_division(){
         window.location.href='<?php echo base_url();?>'+'husers/divisionuser';
@@ -1875,5 +1983,9 @@
             }
         });
     });
+    function delete_check_list(url){
+        $('#delete_check_list_modal').modal('show');    
+        $('.check-list-delete-btn').attr('href', url);
+    }
 </script>
 
