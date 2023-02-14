@@ -784,7 +784,7 @@ class Institute_model extends CI_Model {
 		} else if ($type == 'published') {
 			$status = "request.specimen_publish_status = 1";
 			$req_status = " AND request.publish_status = 1";
-			if ($viewType != '') {
+			if ($viewType != '' && $viewType != 3) {
 				$viewtypeStatus = " AND request.is_viewed = $viewType";
 			}
 		}

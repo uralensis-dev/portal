@@ -44,6 +44,17 @@
         }
         div.dataTables_wrapper div.dataTables_length select{top: -59px;}
     }
+    #display_new_records_filter{
+        display : block !important;
+    }
+    div.dataTables_wrapper div.dataTables_length select{
+        position: absolute;
+        top: -52px;
+        height: 37px !important;
+        width: 50px !important;
+        left: 25px;
+        padding: 0;
+    }
 </style>
 <div class="container-fluid">
     <div class="row">
@@ -101,7 +112,7 @@
                         <li class="tg-statusbar tg-flagcolor">
 
                         </li>
-                        <li class="tg-statusbar tg-flagcolor" style="padding: 5px">
+                        <li class="tg-statusbar tg-flagcolor hide" style="padding: 5px">
                             <div class="tg-checkboxgroup tg-checkboxgroupvtwo numbers_check">
                                 <span class="tg-radio tg-flagcolor1">
                                     <input class="tat" name="tat" id="tat5"  type="radio">
@@ -128,7 +139,7 @@
                             </div>
                         </li>
 
-                        <li class="tg-flagcolor" style="padding: 3px 8px">
+                        <li class="tg-flagcolor hide" style="padding: 3px 8px">
                             <div class="tg-checkboxgroup tg-checkboxgroupvtwo flags_check">
                                 <?php
 if ($this->session->userdata('color_code') !== '') {
@@ -169,7 +180,7 @@ if ($this->session->userdata('color_code') !== '') {
                             </div>
                         </li>
 
-                        <li class="tg-statusbar tg-flagcolor custome-flagcolors">
+                        <li class="tg-statusbar tg-flagcolor custome-flagcolors hide">
                             <div class="tg-checkboxgroup tg-checkboxgroupvtwo">
 
                                 <span class="tg-radio tg-flagcolor4" title="Urgent">
@@ -211,8 +222,9 @@ if ($this->session->userdata('color_code') !== '') {
                         <li class="">
                             <a href="<?php echo base_url(); ?>institute/reports/published/1" class="btn btn-success customBtn">Viewed</a>
                             <a href="<?php echo base_url(); ?>institute/reports/published/2" class="btn btn-success customBtn">Notviewed</a>
+                            <a href="<?php echo base_url(); ?>institute/reports/published/3" class="btn btn-success customBtn">View All</a>
                         </li>
-                        <li class="tg-statusbar tg-flagcolor custome-flagcolors pull-right nobefore search_li" style="padding: 0">
+                        <li class="hide tg-statusbar tg-flagcolor custome-flagcolors pull-right nobefore search_li" style="padding: 0">
                             <div class="input-group">
                                 <input id="unpub_custom_filter" type="text" class="form-control" placeholder="Search">
                                 <div class="input-group-btn">

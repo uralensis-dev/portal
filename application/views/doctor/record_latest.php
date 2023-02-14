@@ -107,7 +107,7 @@ div.dataTables_wrapper div.dataTables_length select {
                     <ul class="tg-filters record-list-filters">
                         <li class="tg-statusbar tg-flagcolor">
                         </li>
-                        <li class="tg-statusbar tg-flagcolor" style="padding: 5px">
+                        <li class="hide tg-statusbar tg-flagcolor" style="padding: 5px">
                             <div class="tg-checkboxgroup tg-checkboxgroupvtwo">
                                 <span class="tg-radio tg-flagcolor1">
                                     <input class="tat" name="tat" id="tat5"  type="radio" onClick="gettatvalue(5)">
@@ -135,7 +135,7 @@ div.dataTables_wrapper div.dataTables_length select {
                             </div>
                         </li>
 
-                        <li class="tg-flagcolor" style="padding: 3px 8px">
+                        <li class="hide tg-flagcolor" style="padding: 3px 8px">
                             <div class="tg-checkboxgroup tg-checkboxgroupvtwo flags_check">
                                 <?php
 if ($this->session->userdata('color_code') !== '') {
@@ -251,7 +251,7 @@ if (empty($session_color)) {
                                 </span>
                             </div>
                         </li> -->
-                        <li class="tg-statusbar tg-flagcolor custome-flagcolors">
+                        <li class="hide tg-statusbar tg-flagcolor custome-flagcolors">
                             <div class="tg-checkboxgroup tg-checkboxgroupvtwo">
 
                                 <span class="tg-radio tg-flagcolor4" title="Urgent">
@@ -325,6 +325,7 @@ if (empty($session_color)) {
                         <li class="">
                             <a href="<?php echo base_url(); ?>doctor/published_reports/<?php echo date('Y') ?>/all/1" class="btn btn-success customBtn">Viewed</a>
                             <a href="<?php echo base_url(); ?>doctor/published_reports/<?php echo date('Y') ?>/all/2" class="btn btn-success customBtn">Notviewed</a>
+                            <a href="<?php echo base_url(); ?>doctor/published_reports/<?php echo date('Y') ?>/all/3" class="btn btn-success customBtn">View All</a>
                         </li>
                         <li class="tg-statusbar tg-flagcolor custome-flagcolors last pull-right" style="padding: 0 10px;">
                             <button type="submit" class="btn btn-default adv-search" data-toggle="collapse" data-target="#collapse_adv_search"><i class="fa fa-cog"></i></button>

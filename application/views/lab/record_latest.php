@@ -323,7 +323,7 @@ if ($this->session->flashdata('record_status') != '') {
             <div class="row">
             <div class="tg-filterhold">
                 <ul class="tg-filters record-list-filters">
-                    <li class="tg-statusbar tg-flagcolor" style="margin-left: 0px">
+                    <li class="hide tg-statusbar tg-flagcolor" style="margin-left: 0px">
                         <div class="tg-checkboxgroup tg-checkboxgroupvtwo">
                             <span class="tg-radio tg-flagcolor1">
                                 <input class="tat" name="tat" id="tat5"  type="radio" onClick="gettatvalue(5)">
@@ -351,7 +351,7 @@ if ($this->session->flashdata('record_status') != '') {
                         </div>
                     </li>
 
-                    <li class="tg-flagcolor" style="padding: 3px 8px">
+                    <li class="hide tg-flagcolor" style="padding: 3px 8px">
                         <div class="tg-checkboxgroup tg-checkboxgroupvtwo flags_check">
                             <?php
 if ($this->session->userdata('color_code') !== '') {
@@ -467,7 +467,7 @@ if (empty($session_color)) {
                             </span>
                         </div>
                     </li> -->
-                    <li class="tg-statusbar tg-flagcolor custome-flagcolors">
+                    <li class="hide tg-statusbar tg-flagcolor custome-flagcolors">
                         <div class="tg-checkboxgroup tg-checkboxgroupvtwo">
 
                             <span class="tg-radio tg-flagcolor4" title="Urgent">
@@ -544,6 +544,7 @@ if (empty($session_color)) {
                     <li class="">
                             <a href="<?php echo base_url(); ?>lab/published_reports/<?php echo date('Y') ?>/all/1" class="btn btn-success customBtn">Viewed</a>
                             <a href="<?php echo base_url(); ?>lab/published_reports/<?php echo date('Y') ?>/all/2" class="btn btn-success customBtn">Notviewed</a>
+                            <a href="<?php echo base_url(); ?>lab/published_reports/<?php echo date('Y') ?>/all/3" class="btn btn-success customBtn">View All</a>
                         </li>
                     <li class="tg-statusbar tg-flagcolor custome-flagcolors pull-right nobefore search_li" style="padding: 0">
                         <!-- <div class="input-group">

@@ -63,7 +63,7 @@ Class Doctor_model extends CI_Model {
 			// $this->db->where('request.lab_id', $group_id);
 			$this->db->where_in('request.lab_id', array(114, 115));
 			$this->db->where('request.publish_status', '1');
-			if ($viewType != '') {
+			if ($viewType != '' && $viewType != 3) {
 				$this->db->where('request.is_viewed', $viewType);
 			}
 			$this->db->group_by('request.uralensis_request_id');
@@ -84,7 +84,7 @@ Class Doctor_model extends CI_Model {
 			$this->db->join('request_assignee', 'request.uralensis_request_id = request_assignee.request_id', 'INNER');
 			$this->db->where('request_assignee.user_id', $doctor_id);
 			$this->db->where('request.publish_status', '1');
-			if ($viewType != '') {
+			if ($viewType != '' && $viewType != 3) {
 				$this->db->where('request.is_viewed', $viewType);
 			}
 			//$this->db->where('request.request_code_status', 'record_publish');
