@@ -75,7 +75,7 @@
                 </ol>
 
             </div>
-            <div class="tg-rightarea">
+            <div class="tg-rightarea hide">
                 <div class="tg-haslayout">
                     <div class="row">
                         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 nopadding-right">

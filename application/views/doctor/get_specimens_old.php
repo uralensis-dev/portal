@@ -284,13 +284,15 @@ function get_specimens(
                                                 //$this->session->set_userdata($session_data);
 
                                                 $path1 = 'lab_uploads/' . $file->file_name;
-                                                $path2 = 'uploads/' . $file->file_name;
+                                                $path2 = 'clinic_uploads/' . $file->file_name;
+                                                $path3 = 'uploads/' . $file->file_name;
                                                 if(file_exists($path1)){
                                                     $srcVal = base_url() . $path1;
-                                                } else {
+                                                } else if(file_exists($path2)){ 
                                                     $srcVal = base_url() . $path2;
+                                                }else {
+                                                    $srcVal = base_url() . $path3;
                                                 }
-
                                                 ?>
                                                 <tr>
                                                     <td><?php echo $file->title; ?></td>
