@@ -1,0 +1,309 @@
+.npr{padding-right: 0px;}
+.npl{padding-left: 0px;}
+
+.fc-event {
+    background-color:transparent !important;
+    position: relative;
+    padding-left: 30px;
+    text-align: left;
+    border-bottom: 2px solid #ffbc34;
+}
+.fc-event:before {
+    width: 15px;
+    height: 15px;
+    border-radius: 15px;
+    background: #ffbc34;
+    content: '';
+    position: absolute;
+    left: 0;
+}
+.fc-day-grid-event .fc-time{display: none !important;}
+.holidays_hours:after{
+    content: "\f072";
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-family: fontawesome;
+    color: #55ce63;
+    border: 1px solid #55ce63;
+    border-radius: 20px;
+    width: 15px;
+    height: 15px;
+    line-height: 1.2;
+    text-align: center;
+}
+span.fc-title {
+    display: inline-block;
+    word-break: break-all;
+    white-space: normal;
+}
+.sick_days:after{
+    content: "\f2be";
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-family: fontawesome;
+    color: #f62d51;
+}
+.overtime:after{
+    content: "\f067";
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-family: fontawesome;
+    color: #00c5fb ;
+    border: 1px solid #00c5fb;
+    border-radius: 20px;
+    width: 15px;
+    height: 15px;
+    line-height: 1.2;
+    text-align: center;
+}
+.main-list{
+    list-style: none;
+    /*background: #dedede;*/
+    padding: 0;
+}
+.main-list li{
+    display: block;
+    padding: 10px;
+    position: relative;
+}
+.main-list p{
+    font-weight: bold;
+    font-size: 20px;
+}
+.main-list li a{
+    color: #000;
+    text-decoration: none;
+    font-size: 14px;
+    display: block;
+    padding: 8px 0;
+}
+.main-list li:hover{
+    background:#fff;
+    color: #000;
+}
+.children{
+    padding: 0;
+    display: none;
+}
+.children li{
+    display: block;
+    border-bottom: 1px solid #ccc;
+}
+.bg-white{background: #fff;}
+.new_card {
+    margin-bottom: 0px !important;
+}
+.new_card .card-header { 
+    padding: 0rem 1.25rem !important;
+}
+/*.col-md-2,.col-md-1,.col-sm-3 {
+    border: 1px solid;
+}*/
+.new_card .card-body {
+    padding: 0px 1.25rem;
+}
+.top-rota-row p {
+    font-size: 10px;
+}
+.rota-btn {
+    margin-top: 6px;
+    margin-right: 3px;
+    font-size: 11px;
+    /*margin-bottom: 10px;*/
+    float: right;
+    padding: 0 4px;
+    line-height: 1,5;
+
+}
+.list_rota{
+    overflow: hidden;
+    margin-bottom: 0;
+    width: 100%;
+}
+ul.list_rota li {
+    float: left;
+    width: calc(100%/7);
+    text-align: center;
+    border-right: 1px solid #ddd;
+    border-bottom: 0px;
+    background: #fff;
+}
+ul.list_rota li p{margin-bottom: 0px;}
+ul.list_rota li:last-child{
+    border-right: 0px;
+}
+ul.list_rota li .rota-inner {
+    padding: 5px;
+    list-style: none;
+}
+
+ul.list_rota.rota_list2 {
+    border-left: 1px solid #ddd;
+    /*border-bottom: 1px solid #ddd;*/
+    padding: 0;
+}
+ul.list_rota.rota_list2 li {
+    min-height: 80px;
+}
+ul.list_rota li .rota-inner li {
+    font-size: 10px;
+    width: 100%;
+    float: none;
+    text-align: left;
+    border-right: 0px;
+    min-height: auto;
+    position: relative;
+    padding: 0 14px;
+    border-bottom: 1px solid transparent;
+}
+ul.list_rota li .rota-inner li span{
+    display: block;
+}
+ul.list_rota li .rota-inner li:before{
+    content: '';
+    position: absolute;
+    width: 13px;
+    height: 13px;
+    border-radius: 10px;
+    background: transparent;
+    top: 0;
+    left: 0;
+}
+ul.list_rota li .rota-inner li:after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-family: fontawesome;
+    line-height: 1.2;
+    text-align: center;
+    border-radius: 20px;
+    width: 15px;
+    height: 15px;
+    border: 1px solid transparent
+}
+ul.list_rota li .rota-inner li.success_eve{border-color: #55ce63 }
+ul.list_rota li .rota-inner li.primary_eve{border-color: #00c5fb; }
+ul.list_rota li .rota-inner li.danger_eve{border-color: #f62d51}
+ul.list_rota li .rota-inner li.warning_eve{border-color: #ffbc34}
+
+ul.list_rota li .rota-inner li.success_eve:before{background: #55ce63;}
+ul.list_rota li .rota-inner li.primary_eve:before{background: #00c5fb}
+ul.list_rota li .rota-inner li.warning_eve:before{background: #ffbc34;}
+ul.list_rota li .rota-inner li.danger_eve:before{background: #f62d51;}
+
+ul.list_rota li .rota-inner li.success_eve:after{
+    content: "\f274";
+    color: #55ce63;
+    border-color:#55ce63;
+}
+ul.list_rota li .rota-inner li.warning_eve:after{
+    content: "\f273";
+    color: #ffbc34;
+    border-color:#ffbc34;
+
+}
+ ul.list_rota li .rota-inner li.danger_eve:after{
+    content: "\f2c0";
+    color: #f62d51;
+    border-color:#f62d51;
+
+}
+ul.list_rota li .rota-inner li.primary_eve:after{
+    content: "\f072";
+    color: #00c5fb;
+    border-color:#00c5fb;
+}    
+.new_card{
+    background: #f7f7f7;
+    padding:0px;
+}
+.user_review li{
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+.user_review li .fa{
+    border: 1px solid transparent;
+    font-size: 15px;
+    width: 20px;
+    height: 20px;
+    line-height: 1.25;
+    text-align: center;
+    border-radius: 15px;
+}
+.user_review li .fa-wrench{
+    border-color: #ffbc34 ;
+    color: #ffbc34;
+}
+.user_review li .fa-plane{
+    border-color: #55ce63;
+    color: #55ce63;
+}
+.user_review li .fa-user{
+    border-color: #f62d51;
+    color: #f62d51;
+}
+.user_review li .fa-plus{
+    border-color: #009efb;
+    color: #009efb;
+}
+.user_review li .fa-times{
+    border: 1px solid #ccc;
+    background: #ccc;
+    color: #fff;
+    border-radius: 10px;
+    text-align: center;
+    line-height: 1.2;
+}
+#user_info_modal .modal-dialog{
+    top: 50%;
+    transform: translateY(-50%);
+}
+.icon_sch .fa{
+    font-size: 38px;
+    margin-bottom: 10px;
+}
+.rota_pop{padding-top: 5px;}
+
+ul.list_rota.day_wise li{
+    width: 100%;
+    min-height: unset;
+}
+ul.list_rota.day_wise li .rota-inner{
+    text-align: left;
+}
+ul.list_rota.day_wise li .rota-inner li{
+    display: inline-block;
+    width: auto;
+    text-align: left;
+
+}
+ul.list_rota.day_wise li div{
+    margin-bottom: 5px;
+}
+.hours_table{`
+    border:1px solid #ddd;
+    margin: 5px 0;
+}
+.hours_table thead tr th{
+    border-bottom: 0px;
+    border-top: 0px;
+    text-align: center;
+}
+.hours_table thead tr th:not(:last-child){
+    border-right: 1px solid #ddd;
+}
+.allday{
+    width: 100%;
+    display: block;
+}
+.hour1{
+    display:block;
+    width: calc(100%/12);
+}
+@media screen and (min-width: 1600px){
+    .main-list li a{font-size: 18px;}
+}

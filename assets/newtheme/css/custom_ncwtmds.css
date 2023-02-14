@@ -1,0 +1,43 @@
+.top_dash .dash-widget-info > span{
+	font-weight: 700;
+	font-size: 20px;
+}
+.top_dash .card.dash-widget {
+    min-height: 185px;
+}
+.top_dash .card.dash-widget p{margin-top: 10px}
+.top_dash .card.dash-widget:hover{
+	background-color: #e7faff;
+}
+button.btn.btn-success.btn-block.newbtn {
+    min-width: 180px;
+    height: 49px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+ul.histo_lab_staus li{position: relative; height: 50px;}
+ul.histo_lab_staus li .numbers {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+.list-inline > .adv-search {
+    font-size: 24px;
+    border: 0px;
+    outline: none;
+    background: transparent;
+    padding: 0;
+    line-height: 2;
+}
+.btn.btn-trans:focus {
+    background: none;
+    color: #00b7ed;
+    border-color: transparent;
+}
+.input-lg, .newbtn{height: 50px;}
+.newbtn{font-size: 16px;}
+.adv-search{line-height: unset;}

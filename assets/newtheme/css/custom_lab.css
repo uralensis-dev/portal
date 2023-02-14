@@ -1,0 +1,10 @@
+table.table td h2,.fc-toolbar h2{background: transparent;}
+.total_project_count{padding: 30px;}
+.fc-toolbar.fc-header-toolbar{display: none}
+.checkbox-lg{width: 25px; height: 25px;}
+.add_permission .modal-footer{text-align: center;}
+input.form-control.input-lg {height: 50px;line-height: 1.5;}
+.custom-modal .modal-footer{text-align: center;}
+.btn.btn-rounded {font-size: 18px; padding: 10px 40px; min-width: 120px;}
+.dash-sidebar .card{box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.2)}
+.last_row_lab .card{min-height: 431px;}

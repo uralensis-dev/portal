@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `is_reset` TINYINT(1) NOT NULL DEFAULT '0' AFTER `status`; 

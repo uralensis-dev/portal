@@ -1,0 +1,42 @@
+.noborder{
+	border:0px !important;
+}
+.btn-lg{
+	height: 43px
+}
+.bg-gray, .bg-gray tr th{background: #f5f5f5}
+.teamsup{
+	overflow: hidden;
+}
+.mt-150{
+	margin-top: 150px;
+}
+.teamsup li{
+ 	float: left;
+ 	margin-right: 15px;
+
+}
+.mce-content-body , body{
+    font-family: Circular Std Book !important;
+}
+img.input-img {
+    position: absolute;
+    top: 0;
+    width: 44px;
+}
+.input-qr{
+	padding-left: 50px;
+}
+.custom-menu{margin-top: 0;}
+.task-wrapper{background: #f5f5f5}
+.carousel-control-next:focus .fa, .carousel-control-next:hover .fa, .carousel-control-prev:focus .fa, .carousel-control-prev:hover .fa{
+	opacity: 1;
+	color: #000;
+}
+input.form-control[type="text"]:focus,
+input.form-control[type="password"]:focus,
+textarea.form-control:focus,
+input[type=text]:focus, input[type=password]:focus,
+select.form-control:focus{
+    border-color: #00c5fb !important;
+}

@@ -1,0 +1,52 @@
+*:after,
+*:before,
+p a,
+a,
+.tg-socialicons li a,
+.tg-roundicontext,
+.tg-roundicontext .tg-usericonholder,
+.sub-menu,
+.mega-menu,
+
+
+
+
+
+
+.tg-formsearch .form-group.tg-bookedbtn a span,
+.tg-tag i,
+.tg-nextecord,
+.tg-previousrecord,
+.tg-previousrecord a span,
+.tg-nextecord a span,
+.tg-previousrecord a i,
+.tg-nextecord a i,
+.tg-usernav,
+.tg-sidebarwrapper,
+.tg-wrapper
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+	-webkit-transition: all 300ms ease-in-out;
+	-moz-transition: all 300ms ease-in-out;
+	-ms-transition: all 300ms ease-in-out;
+	-o-transition: all 300ms ease-in-out;
+	transition: all 300ms ease-in-out;
+}

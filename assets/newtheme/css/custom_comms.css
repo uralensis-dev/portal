@@ -1,0 +1,6 @@
+.chat-main-row{top: 30px; padding-bottom: 0}
+.fc-toolbar .fc-left {float: left;}
+.fc-toolbar .fc-right {float: right;}
+.fc-icon, .fc-toolbar .fc-center {display: inline-block;}
+.fc-clear {clear: both;}
+.chat-wrap-inner{overflow-x: hidden;}

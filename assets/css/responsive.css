@@ -1,0 +1,143 @@
+@media (max-width:1199px){
+	.tg-admininputshold fieldset .form-group:first-child{width: 50%;}
+	.tg-admininputshold fieldset .form-group{width: 25%;}
+	.tg-filters > li:last-child{padding:10px 0 0;}
+	.tg-filters > li:last-child:before{display: none;}
+	.tg-tabfieldsetfour .form-group:first-child{width: 100%;}
+	.tg-searchrecordhold .tg-breadcrumb{width: 100%;}
+	.tg-rightsearchrecord .tg-searchrecordslide{padding-left: 0;border-left:0;}
+	.tg-rightsearchrecord{width: 100%;}
+	.tg-logobar{float: right;}
+	.tg-headervtwo .tg-userinfo{
+		float: left;
+		width: 100%;
+		margin-top:10px; 
+	}
+	.tg-groupschecks .tg-formradiohold .tg-radio{width: 33.33%;}
+}
+@media (max-width:991px){
+	.tg-wrapper .tg-logoarea .tg-logoicon {
+		left: 10px;
+		opacity: 1;
+		margin: -10px 0 0;
+		visibility: visible;
+	}
+	.tg-openmenu .tg-logoarea .tg-logoicon {
+	    right: auto;
+	    left: -10px;
+	    opacity: 0;
+	    visibility: hidden;
+	}
+	.tg-dashboard .tg-wrapper{padding-left: 50px;}
+	.tg-dashboard .tg-wrapper .tg-sidebarwrapper{width: 50px;}
+	.tg-dashboard .tg-wrapper.tg-openmenu .tg-sidebarwrapper{width: 270px;}
+	.tg-dashboard .tg-wrapper.tg-openmenu{padding-left:270px; }
+	.tg-dashboard .tg-openmenu .tg-sidebarwrapper .tg-logo{margin: 0;}
+	.tg-dashboard .tg-sidebarwrapper .tg-logo{margin: 0 0 0 50px;}
+	.tg-dashboard .tg-openmenu .tg-logoarea{padding:0; }
+	.tg-dashboard .tg-logoarea{padding: 30px 0;}
+	.tg-userhistoryhold{margin-bottom:30px; }
+	.tg-advancesearch fieldset .form-group:first-child{width: 100%;}
+	.tg-advancesearch fieldset .form-group{width: 33.33%;}
+	.tg-rightsearchrecord .tg-searchrecord{
+		float: none;
+		margin: 0 auto;
+	}
+	.tg-rightsearchrecord .tg-searchrecordslide{width: 100%;padding-right:0;border-right:0; }
+	.tg-admininputshold fieldset .form-group:first-child{width: 100%;}
+	.tg-admininputshold fieldset .form-group{width: 33.33%;}
+	.tg-filters > li{width: 100%; padding:10px 0;}
+	.tg-filters > li + li{
+		
+		border-top: 1px solid #ddd;
+	}
+	.tg-filters > li:before{display: none;}
+	.tg-themedetailsicon li{
+		width: 100%;
+		padding:5px 0;
+	}
+	.tg-themedetailsicon li + li{border-left:0; border-top: 1px solid #ddd;}
+	.tg-themedetailsicon li.tg-reloadoption{padding:10px 0 0; border-top: 1px solid #ddd;}
+	.tg-themedetailsicon li .tg-detailsicon{margin: 5px 0 5px 20px;}
+	.tg-themedetailsicon li.tg-reloadoption a + a{margin:5px 0 5px 10px;}
+	.tg-themedetailsicon li a:first-child{margin-left:0; }
+	.tg-formgrouphold{width: 100%;}
+	.tg-tabfieldsettwo .form-group.tg-lasttextarea:last-child{width: 100%;}
+}
+@media (max-width:800px){}
+@media (max-width:767px){
+	.tg-advancesearch fieldset .form-group{width: 50%;}
+	.tg-tabfieldsetfour .form-group.halfformgroup{width: 50%;}
+	.tg-tabfieldsetfour .form-group:nth-child(2){width: 100%;}
+	.tg-inputshold .tg-titlevtwo{width: 100%;}
+	.tg-themenavtabs{
+		float: none;
+		margin:-5px;
+	}
+	.tg-themenavtabs li{
+		width: 50%;
+		padding:5px;
+	}
+	.tg-themenavtabs li + li{padding: 5px;}
+	.tg-dropdowarrow{display: block;}
+	.tg-nav{
+		width: auto;
+		float: right;
+	}
+	.tg-navigation{
+		top: 100%;
+		left: 0;
+		background: #fff;
+		position: absolute;
+	}
+	.tg-navigation ul{}
+	.tg-navigation ul li{
+		width: 100%;
+		float: left;
+		display: block;
+	}
+	.sub-menu,
+	.mega-menu{
+		clear: both;
+		float: left;
+		display: none;
+		position: static;
+		width: 100% !important;
+	}
+}
+@media (max-width:700px){
+	.tg-addnav{width: 100%;}
+	.tg-copyrights{width: 100%;margin: 10px 0 0;text-align: right;}
+	.tg-admininputshold fieldset .form-group{width: 50%;}
+	.tg-tabfieldsetthree .form-group:nth-child(2),
+	.tg-tabfieldsetthree .form-group:first-child{width: 100%;}
+}
+@media (max-width:640px){
+	.tg-inputshold{padding:30px 10px;}
+	.tg-tabfieldsetfour .form-group.halfform-group,
+	.tg-tabfieldsetfour .form-group.halfformgroup{width: 100%;}
+}
+@media (max-width:568px){
+	.tg-langnotification li:first-child a{padding: 22px 10px;}
+	.tg-dashboard .tg-main{padding: 25px 20px;}
+	.tg-editform .form-group{width: 100%;}
+	.tg-groupschecks .tg-formradiohold .tg-radio{width: 50%;}
+	.tg-tabfieldsettwo .form-group{width: 100%;}
+	.tg-rightsearchrecord .tg-searchrecord{float: left;width: 100%;margin:10px 0;}
+	.tg-flagcolortopbar{width: 100%; margin-bottom: 10px;}
+	.tg-searchrecordoptionvtwo{margin-left:0; }
+	.tg-langnotification li a{padding: 18px 15px;}
+	.tg-userlogedin{padding: 0 0 0 20px;}
+}
+@media (max-width:480px){
+	.tg-dashboardheader > .tg-rightarea{width: 100%;}
+	.tg-attachmentdetails li span{width: 100%;}
+	.tg-attachmentdetails li em{margin-top:10px; width: 100%;}
+	.tg-advancesearch fieldset .form-group{width:100%;}
+	.tg-filters > li > a{margin:5px; }
+}
+@media (max-width:479px){
+	.tg-admininputshold fieldset .form-group{width: 100%;}
+	.tg-themenavtabs li{width: 100%;}
+}
+@media (max-width:320px){}

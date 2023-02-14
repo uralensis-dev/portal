@@ -1,0 +1,79 @@
+body{
+	background: #00a7e8;
+	height: 100vh;
+	margin: 0;
+}
+.login_wrap {
+    max-width: 470px;
+    width: 100%;
+    /*border-radius: 10px;*/
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+.login_wrap2{
+ 	padding: 70px 40px 20px;
+ 	background: #fff;
+}
+.wizard > .content{min-height: 180px !important;}
+.wizard > .steps > ul > li {
+    width: 33% !important;
+}
+.wizard > .actions > ul > li{display: block; float: none;}
+.wizard > .actions > ul {
+    display: block;
+    text-align: center;
+}
+.wizard > .actions > ul > li:first-child{
+	display: none;
+}
+.login_wrap .form-group{position: relative; margin-bottom: 0;}
+.login_wrap .fa {
+    position: absolute;
+    top: 17px;
+    left: 11px;
+    color: #8ea2b2;
+    font-size: 22px;
+}
+.login_wrap section.body  input{
+	padding-left: 40px;
+	border-radius: 0px;
+	height: 60px;
+}
+.login_wrap section.body input[type="password"]{
+	padding-right: 60px;
+}
+.login_wrap #steps-uid-0-p-0 a {
+    position: absolute;
+    top: 19px;
+    right: 10px;
+    color: #999;
+}
+.pathhub {
+    background: #444;
+    padding: 15px;
+    margin-bottom: 30px;
+	font-size: 16px;
+	text-align: center;
+	color: #fff;
+    overflow-x:
+}
+.pathhub a{color: #fff; border-bottom: 1px dotted transparent}
+.pathhub a:hover, .pathhub a:focus {color: #fff; border-color: #fff}
+.wizard > .steps .error a, .wizard > .steps .error a:hover, .wizard > .steps .error a:active {
+    background: #777
+}
+
+.wizard > .actions a, .wizard > .actions a:hover, .wizard > .actions a:focus {
+    padding: 18px;
+    font-size: 16px;
+    background: #00a7e8;
+    text-transform: uppercase;
+    border-radius: 0px;
+}
+.signUp a{color: #fff; text-decoration: underline;}
+
+.wizard > .steps .done a, .wizard > .steps .done a:hover, .wizard > .steps .done a:active{
+    background: #00a7e8 !important;
+}

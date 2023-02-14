@@ -1,0 +1,96 @@
+.department-title, 
+.specialty-title {
+    cursor: pointer;
+}
+
+.btn {
+    border-radius: 10px;
+}
+.hidden{display: none;}
+
+.edit-department,
+.delete-department {
+    font-size: 24px;
+    transition: font-size 100ms linear;
+}
+
+.edit-department:hover,
+.delete-department:hover {
+    font-size: 28px;
+}
+
+.edit-department:hover {
+    color: hsl(45,100%,51%);
+}
+
+.delete-department:hover {
+    color: red;
+}
+
+.edit-specialty,
+.delete-specialty {
+    font-size: 18px;
+    transition: font-size 100ms linear;
+}
+
+.edit-specialty:hover,
+.delete-specialty:hover {
+    font-size: 22px;
+}
+
+.edit-specialty:hover {
+    color: hsl(45,100%,51%);
+}
+
+.delete-specialty:hover {
+    color: red;
+}
+.snomed-category,
+.edit-category,
+.delete-category,
+.edit-specimen,
+.delete-specimen
+{
+    font-size: 16px;
+    transition: font-size 100ms linear;
+}
+
+.edit-category:hover,
+.delete-category:hover,
+.edit-specimen:hover,
+.delete-specimen:hover
+{
+    font-size: 20px;
+}
+.snomed-category:hover{
+    color: rgb(50,205,50);
+}
+.edit-category:hover,
+.edit-specimen:hover
+{
+    color: hsl(45,100%,51%);
+}
+
+.delete-category:hover,
+.delete-specimen:hover
+{
+    color: red;
+}
+
+
+.accordion-button {
+    font-size: 1.2rem;
+}
+
+.collapsible-header {
+    background-color: hsl(0, 0%, 95%);
+}
+
+.error-message {
+    display: none;
+    color: red;
+}
+
+.specialty-department-block {
+    display: none;
+}

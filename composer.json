@@ -1,0 +1,12 @@
+{
+	"description" : "PathHub",
+	"name" : "codeigniter/framework",
+	"license": "MIT",
+	"require": {
+		"php": ">=7.0",
+		"phpoffice/phpspreadsheet": "^1.14"
+	},
+	"require-dev": {
+		"mikey179/vfsstream": "1.1.*"
+	}
+}

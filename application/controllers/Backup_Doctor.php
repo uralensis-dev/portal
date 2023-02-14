@@ -1,0 +1,6580 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+Class Doctor extends CI_Controller {
+
+    public function __construct() {
+        parent::__construct();
+        $this->load->model('Doctor_model');
+        $this->load->library('form_validation');
+        $this->load->helper('form');
+        $this->load->helper(array('url', 'activity_helper', 'dashboard_functions_helper'));
+        $this->load->library('email');
+        $this->load->library('word');
+        $this->load->helper("file");
+        track_user_activity();
+    }
+
+    public function index() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $published['published'] = $this->Doctor_model->status_bar_result_count_published();
+        $unpublished['unpublished'] = $this->Doctor_model->status_bar_result_count_un_reported();
+        $totalreports['totalreports'] = $this->Doctor_model->status_bar_result_count_total_reports();
+        $login_records['previous_login'] = $this->Doctor_model->previous_login_records();
+        $dashboard_reports_status = array_merge($published, $unpublished, $totalreports, $login_records);
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/dashboard', $dashboard_reports_status);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    public function doctor_record_list() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $data["query"] = $this->Doctor_model->doctor_record_list($doctor_id);
+        $hospitals["get_hospitals"] = $this->Doctor_model->display_hospitals_list();
+
+        $result = array_merge($data, $hospitals);
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/record_list', $result);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    public function doctor_record_detail($id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($id) && !empty($id)) {
+
+            $doctor_id = $this->ion_auth->user()->row()->id;
+//            $get_further['get_further'] = $this->Doctor_model->get_further_work($id);
+//            $get_additional['get_additional'] = $this->Doctor_model->get_additional_work_for_prebulish($id);
+//            $get_hospital_info['get_hospital_info'] = $this->Doctor_model->get_hospital_info($id);
+
+            $data['request_query'] = $this->Doctor_model->doctor_record_detail($id);
+            $specimen_data['specimen_query'] = $this->Doctor_model->doctor_record_detail_specimen($id);
+            $supplemnt_data['supplementary_query'] = $this->Doctor_model->get_supplementary($id);
+            $nhs_number = $data['request_query'][0]->nhs_number;
+            $related_posts['related_query'] = $this->Doctor_model->related_posts_model($id, $nhs_number);
+            $edu_cats['education_cats'] = $this->Doctor_model->get_education_cases_model();
+            $cpc_cats['cpc_cats'] = $this->Doctor_model->get_cpc_cases_model();
+            $hospital_group_id = $data['request_query'][0]->hospital_group_id;
+            $mdt_cats['mdt_cats'] = $this->Doctor_model->get_mdt_cases_model($hospital_group_id);
+            $doctors_list['list_doctors'] = $this->Doctor_model->list_doctors();
+            $user_rec_edit_status['record_edit_status'] = $this->Doctor_model->get_one_user_record_edit_status($id);
+            $user_rec_edit_status_full['record_edit_status_full'] = $this->Doctor_model->get_user_record_edit_status($id);
+            $micro_codes['micro_codes'] = $this->Doctor_model->micro_codes_records_model();
+            $mdt_list['mdt_list'] = $this->Doctor_model->display_mdt_list_model($hospital_group_id);
+            $datasets_data['datasets'] = $this->Doctor_model->get_datasets_data();
+            $record_history['record_history'] = $this->Doctor_model->get_record_history_data($id);
+            $mdt_assign_dates['mdt_assign_dates'] = $this->Doctor_model->get_db_assign_dates($id);
+            $download_history['download_history'] = $this->Doctor_model->getRecordDownloadHistory($id, $doctor_id);
+            $specimen_accepted_by['specimen_accepted_by'] = $this->Doctor_model->get_specimen_data('specimen_accepted_by');
+            $specimen_assisted_by['specimen_assisted_by'] = $this->Doctor_model->get_specimen_data('specimen_assisted_by');
+            $specimen_block_checked_by['specimen_block_checked_by'] = $this->Doctor_model->get_specimen_data('specimen_block_checked_by');
+            $specimen_cutup_by['specimen_cutup_by'] = $this->Doctor_model->get_specimen_data('specimen_cutup_by');
+            $specimen_labeled_by['specimen_labeled_by'] = $this->Doctor_model->get_specimen_data('specimen_labeled_by');
+            $specimen_qcd_by['specimen_qcd_by'] = $this->Doctor_model->get_specimen_data('specimen_qcd_by');
+
+            //Check if Booked out from lab status is added
+            $rec_bck_frm_lab_date_data = array();
+            $rec_by_doc_date_data = array();
+            $check_booked_out_status = $this->db->where('ura_rec_track_record_id', $id)->where('ura_rec_track_status', 'Booked out from Lab')->get('uralensis_record_track_status')->row_array();
+            $rec_by_doc_date = '';
+            $booked_out_from_lab_time = '';
+            if (!empty($check_booked_out_status) && $check_booked_out_status['ura_rec_track_status'] === 'Booked out from Lab') {
+                $booked_out_from_lab_time = date('Y-m-d', $check_booked_out_status['timestamp']);
+
+                if (empty($data['request_query'][0]->date_sent_touralensis) && empty($data['request_query'][0]->date_rec_by_doctor)) {
+                    //Get the booked out from lab status date timestamp
+                    $rec_by_doc_new_date = strtotime('+1 day', strtotime($booked_out_from_lab_time));
+                    $rec_by_doc_date = date('Y-m-d', $rec_by_doc_new_date);
+                    $this->db->where('uralensis_request_id', $id)->update('request', array('date_sent_touralensis' => $booked_out_from_lab_time, 'date_rec_by_doctor' => $rec_by_doc_date));
+                } elseif (!empty($data['request_query'][0]->date_sent_touralensis) && empty($data['request_query'][0]->date_rec_by_doctor)) {
+                    $rec_by_doc_new_date = strtotime('+1 day', strtotime($booked_out_from_lab_time));
+                    $rec_by_doc_date = date('Y-m-d', $rec_by_doc_new_date);
+                    $this->db->where('uralensis_request_id', $id)->update('request', array('date_rec_by_doctor' => $rec_by_doc_date));
+                }
+            } else {
+                if (!empty($data['request_query'][0]->date_sent_touralensis) && empty($data['request_query'][0]->date_rec_by_doctor)) {
+                    $booked_out_from_lab_date = date('Y-m-d', strtotime($data['request_query'][0]->date_sent_touralensis));
+                    $rec_by_doc_new_date = strtotime('+1 day', strtotime($booked_out_from_lab_date));
+                    $rec_by_doc_date = date('Y-m-d', $rec_by_doc_new_date);
+                    $this->db->where('uralensis_request_id', $id)->update('request', array('date_rec_by_doctor' => $rec_by_doc_date));
+                }
+            }
+
+            $rec_bck_frm_lab_date_data['bck_frm_lab_date_data'] = $booked_out_from_lab_time;
+            $rec_by_doc_date_data['rec_by_doc_date_data'] = $rec_by_doc_date;
+
+            $record_id = $id;
+            $user_id = $this->ion_auth->user()->row()->id;
+
+            $record_user_data['user_record_data'] = array(
+                'record_id' => $record_id,
+                'user_id' => $user_id
+            );
+
+            $change_status = array('report_status' => 0);
+
+            $this->db->where('uralensis_request_id', $id);
+            $this->db->update('request', $change_status);
+
+            /* Get Doctor Files Data 11/12/2015 */
+            $files_data["files"] = $this->Doctor_model->fetch_files_data($id);
+            /* Get Doctor Files Data 11/12/2015 */
+        }
+
+        $data_and_files = array_merge(
+                $data, $specimen_data, $files_data,
+                $supplemnt_data, $related_posts, $edu_cats,
+                $cpc_cats, $mdt_cats, $doctors_list,
+                $user_rec_edit_status, $user_rec_edit_status_full,
+                $micro_codes, $mdt_list, $datasets_data,
+                $record_history, $rec_bck_frm_lab_date_data,
+                $rec_by_doc_date_data, $mdt_assign_dates,
+                $download_history, $specimen_accepted_by,
+                $specimen_assisted_by, $specimen_block_checked_by,
+                $specimen_cutup_by, $specimen_labeled_by, $specimen_qcd_by);
+
+        /* Include The Comment Section Template */
+
+        require_once('application/views/doctor/comment_section.php');
+        require_once('application/views/doctor/manage_supplementary.php');
+        require_once('application/views/doctor/manage_documents.php');
+        require_once('application/views/doctor/related_posts.php');
+        require_once('application/views/doctor/get_specimens.php');
+        require_once('application/views/doctor/special_notes.php');
+
+        require_once('application/views/doctor/inc/functions.php');
+        require_once('application/views/doctor/datasets/datasets.php');
+        require_once('application/views/doctor/record_history/record_history-functions.php');
+        //Get Pre Publish Report View File.
+//        require_once('application/views/doctor/viewpdf.php');
+        /* ------------------------------------ */
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/record_detail', $data_and_files);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    public function generate_report($id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($id) && !empty($id)) {
+            $check_booked_out_status = $this->db->where('ura_rec_track_record_id', $id)->where('ura_rec_track_status', 'Booked out from Lab')->get('uralensis_record_track_status')->row_array();
+
+            $lab_release_date = array();
+            if (!empty($check_booked_out_status) && $check_booked_out_status['ura_rec_track_status'] === 'Booked out from Lab') {
+                $lab_release_date['release_date'] = date('d-m-Y', $check_booked_out_status['timestamp']);
+            }
+
+            $data1['query1'] = $this->Doctor_model->doctor_record_detail($id);
+            $data2['query2'] = $this->Doctor_model->doctor_record_detail_specimen($id);
+            $data3['query3'] = $this->Doctor_model->get_further_work($id);
+            $data4['query4'] = $this->Doctor_model->get_additional_work($id);
+            $data5['query5'] = $this->Doctor_model->get_hospital_info($id);
+            $result = array_merge($data1, $data2, $data3, $data4, $data5, $lab_release_date);
+            $this->load->view('doctor/pdf', $result);
+        }
+    }
+
+    public function update_report() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/update_recored');
+        $this->load->view('doctor/inc/footer');
+    }
+
+    public function update_only_report() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($_POST)) {
+
+            $json = array();
+            $record_id = $_POST['record_id'];
+            $user_id = $this->ion_auth->user()->row()->id;
+
+            /**
+             * Get the default edit status array
+             */
+            $edit_status_query = $this->db->query("SELECT request.record_edit_status FROM request WHERE request.uralensis_request_id = $record_id")->result();
+            $default_edit_status = unserialize($edit_status_query[0]->record_edit_status);
+
+            /**
+             * Get the JSON Edit Data
+             * For Color Edit Status
+             */
+            $json_edit_status = json_decode($_POST['json_edit_data'], true);
+
+            $edit_color_array = array();
+            foreach ($json_edit_status as $key => $value) {
+                if (trim($_POST[$key]) != trim($value)) {
+                    $default_edit_status[$key] = 'yes';
+                }
+            }
+
+            $lab_number = $this->input->post('lab_number');
+            if (!empty($record_id)) {
+                $check_lab_no = $this->db->query("SELECT request.lab_number FROM request WHERE request.lab_number = '$lab_number' AND request.uralensis_request_id != $record_id")->result_array();
+
+                //Check if lab number match then redirect to form page.
+                if (($lab_number == 'U') ||
+                        ($lab_number == 'S') ||
+                        ($lab_number == 'H') &&
+                        (strlen($lab_number) == 1)) {
+                    //return true;
+                } else if (!empty($check_lab_no[0]['lab_number']) && $check_lab_no[0]['lab_number'] === $lab_number) {
+                    $json['type'] = 'error';
+                    $json['msg'] = 'This lab number already assigned to some case.';
+                    echo json_encode($json);
+                    die;
+                }
+            }
+
+            //check if lab number masking is different then to selected lab name.
+            //Get the lab number format mask
+
+            $lab_name_input_val = $this->input->post('lab_name');
+            $lab_number_input_val = $this->input->post('lab_number');
+            $lab_format = $this->db->select('lab_format_mask')->where('lab_name', $lab_name_input_val)->get('lab_names')->row_array()['lab_format_mask'];
+
+            if (preg_match('/-/', $lab_format)) {
+                $explode_mask = explode("-", $lab_format);
+                $explode_lab_no = explode("-", $lab_number_input_val);
+
+                if (empty($lab_number_input_val)) {
+                    $json['type'] = 'error';
+                    $json['msg'] = 'Lab  format field should not be empty.';
+                    echo json_encode($json);
+                    die;
+                }
+
+                if (!empty($explode_mask) && !empty($explode_lab_no)) {
+                    if ($explode_mask[0] && $explode_lab_no[0] && strcmp($explode_mask[0], $explode_lab_no[0])) {
+                        $json['type'] = 'error';
+                        $json['msg'] = 'This lab number does not match to lab mask no. eg: ' . $lab_format;
+                        echo json_encode($json);
+                        die;
+                    }
+                }
+            } else {
+                if (!empty($lab_format)) {
+                    if (strcmp(substr($lab_format, 0, 3), substr($lab_number_input_val, 0, 3))) {
+                        $json['type'] = 'error';
+                        $json['msg'] = 'This lab number does not match to lab mask no.';
+                        echo json_encode($json);
+                        die;
+                    }
+                }
+            }
+
+            $data = array(
+                'sur_name' => $this->input->post('sur_name'),
+                'patient_initial' => $this->input->post('patient_initial'),
+                'pci_number' => $this->input->post('pci_number'),
+                'f_name' => $this->input->post('f_name'),
+                'emis_number' => $this->input->post('emis_number'),
+                'nhs_number' => $this->input->post('nhs_number'),
+                'date_taken' => !empty($this->input->post('date_taken')) ? date('Y-m-d', strtotime($this->input->post('date_taken'))) : '',
+                'lab_number' => $this->input->post('lab_number'),
+                'cl_detail' => $this->input->post('cl_detail'),
+                'dob' => !empty($this->input->post('dob')) ? date('Y-m-d', strtotime($this->input->post('dob'))) : '',
+                'gender' => $this->input->post('gender'),
+                'clrk' => $this->input->post('clrk'),
+                'dermatological_surgeon' => $this->input->post('dermatological_surgeon'),
+                'lab_name' => $this->input->post('lab_name'),
+                'report_urgency' => $this->input->post('report_urgency'),
+                'date_received_bylab' => !empty($this->input->post('date_received_bylab')) ? date('Y-m-d', strtotime($this->input->post('date_received_bylab'))) : '',
+                'date_sent_touralensis' => !empty($this->input->post('date_sent_touralensis')) ? date('Y-m-d', strtotime($this->input->post('date_sent_touralensis'))) : '',
+                'date_rec_by_doctor' => !empty($this->input->post('rec_by_doc_date')) ? date('Y-m-d', strtotime($this->input->post('rec_by_doc_date'))) : '',
+                'cases_category' => $this->input->post('cases_category'),
+                'cost_codes' => $this->input->post('cost_codes'),
+                'record_edit_status' => serialize($default_edit_status)
+            );
+
+
+            /**
+             * Get pre saved data from request
+             * Update record history data
+             * Prepare Data for update
+             */
+            $get_record = "SELECT sur_name, patient_initial, pci_number, f_name, emis_number, nhs_number, date_taken, lab_number, cl_detail, dob, gender, clrk, dermatological_surgeon, lab_name, report_urgency, date_received_bylab, date_sent_touralensis, date_rec_by_doctor, cases_category, cost_codes, record_edit_status FROM request WHERE request.uralensis_request_id = $record_id";
+            $get_record_data = $this->db->query($get_record)->result_array();
+
+            $record_history_data = array();
+            if ($get_record_data[0] === $data) {
+                $json['type'] = 'error';
+                $json['msg'] = 'You have not changed any field yet!';
+                echo json_encode($json);
+                die;
+            } else {
+                foreach ($data as $key => $value) {
+                    if ($value !== $get_record_data[0][$key]) {
+                        $record_history_data[$key] = $data[$key];
+                    }
+                }
+            }
+
+            if (!empty($record_history_data)) {
+                $history_data = array(
+                    'rec_history_user_id' => $user_id,
+                    'rec_history_record_id' => $record_id,
+                    'rec_history_data' => serialize($record_history_data),
+                    'rec_history_status' => 'edit',
+                    'timestamp' => time()
+                );
+                $this->db->insert('uralensis_record_history', $history_data);
+            }
+
+            //Update record in database
+            $this->db->where('uralensis_request_id', $record_id);
+            $this->db->update('request', $data);
+
+            $check_record = $this->db->affected_rows();
+
+            $user_edit_data = array(
+                'user_id_for_edit' => $user_id,
+                'record_id_for_edit' => $record_id,
+                'user_record_edit_timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_edit_status', $user_edit_data);
+
+            /* Check if user enter the pci number to save */
+            if (!empty($this->input->post('pci_number'))) {
+                $this->db->where('uralensis_request_id', $record_id);
+                $this->db->update('request', array('request_code_status' => 'pci_added'));
+            }
+
+            if ($check_record > 0) {
+                $json['type'] = 'success';
+                $json['msg'] = 'Record Has Been Successfully Updated.';
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'Some how record did not updated successfully or updated already.';
+                echo json_encode($json);
+                die;
+            }
+        }
+
+        $report_update_message = '<p class="bg-success" style="padding:7px;">Report Has Been Successfully Updated.</p>';
+        $this->session->set_flashdata('update_report_message', $report_update_message);
+
+        redirect('doctor/update_report/' . $id, 'refresh');
+    }
+
+    public function update_client_report() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        
+        print_r($_POST);
+        die;
+        
+        $this->form_validation->set_rules('specimen_macroscopic_description', 'Macroscopic Description ', 'required');
+        $this->form_validation->set_rules('specimen_microscopic_description', 'Microscopic Description', 'required');
+
+        if (isset($_POST)) {
+
+            $record_id = $_POST['record_id'];
+            $specimen_id = $_POST['specimen_id'];
+
+            $specimen_benign = $this->input->post('specimen_benign');
+            $specimen_atypical = $this->input->post('specimen_atypical');
+            $specimen_malignant = $this->input->post('specimen_malignant');
+            $specimen_inflammation = $this->input->post('specimen_inflammation');
+
+            $specimen_snomed_t = '';
+            $specimen_snomed_p = '';
+            $specimen_snomed_m = '';
+
+            if (!empty($this->input->post('specimen_snomed_t'))) {
+                $specimen_snomed_t = implode(',', $this->input->post('specimen_snomed_t'));
+            }
+            if (!empty($this->input->post('specimen_snomed_p'))) {
+                $specimen_snomed_p = implode(',', $this->input->post('specimen_snomed_p'));
+            }
+            if (!empty($this->input->post('specimen_snomed_m'))) {
+                $specimen_snomed_m = implode(',', $this->input->post('specimen_snomed_m'));
+            }
+
+            $spec = array(
+                'specimen_site' => $this->input->post('specimen_site'),
+                'specimen_procedure' => $this->input->post('specimen_procedure'),
+                'specimen_block' => $this->input->post('specimen_block'),
+                'specimen_slides' => $this->input->post('specimen_slides'),
+                'specimen_block_type' => $this->input->post('specimen_block_type'),
+                'specimen_macroscopic_description' => $this->input->post('specimen_macroscopic_description'),
+                'specimen_microscopic_code' => $this->input->post('specimen_microscopic_code'),
+                'specimen_microscopic_description' => $this->input->post('specimen_microscopic_description'),
+                'specimen_type' => $this->input->post('specimen_type'),
+                'specimen_snomed_code' => $this->input->post('specimen_snomed_code'),
+                'specimen_snomed_t' => $specimen_snomed_t,
+                'specimen_snomed_p' => $specimen_snomed_p,
+                'specimen_snomed_m' => $specimen_snomed_m,
+                'specimen_rcpath_code' => $this->input->post('rcpath_code'),
+                'specimen_diagnosis_description' => $this->input->post('specimen_diagnosis'),
+                'specimen_cancer_register' => $this->input->post('specimen_cancer'),
+                'specimen_benign' => !empty($specimen_benign) ? $specimen_benign : '',
+                'specimen_atypical' => !empty($specimen_atypical) ? $specimen_atypical : '',
+                'specimen_malignant' => !empty($specimen_malignant) ? $specimen_malignant : '',
+                'specimen_inflammation' => !empty($specimen_inflammation) ? $specimen_inflammation : ''
+            );
+
+            $this->db->where('request_id', $record_id);
+            $this->db->where('specimen_id', $specimen_id);
+
+            $this->db->update('specimen', $spec);
+            $user_id = $this->ion_auth->user()->row()->id;
+
+            /**
+             * Change Color Status IF Microscopic Data added
+             */
+            if (!empty($this->input->post('specimen_microscopic_description'))) {
+                $this->db->where('uralensis_request_id', $record_id);
+                $this->db->update('request', array('request_code_status' => 'micro_add'));
+            }
+
+            /**
+             * Update The user id and timestamp
+             */
+            $user_edit_data = array(
+                'user_id_for_edit' => $user_id,
+                'record_id_for_edit' => $record_id,
+                'user_record_edit_timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_edit_status', $user_edit_data);
+
+
+            $check_record = $this->db->affected_rows();
+            if ($check_record == 1) {
+                $session_data = array(
+                    'doctor_id' => $user_id
+                );
+                $this->session->set_userdata($session_data);
+                $doctor_data = array(
+                    'doctor_id' => $user_id = $this->session->userdata('doctor_id')
+                );
+                /* This will update the entry in user request table and put doctor id in this table */
+                $this->db->where('request_id', $record_id);
+                $this->db->update('users_request', $doctor_data);
+                /* This will redirect the view after submission. */
+
+                $data = array(
+                    'specimen_update_status' => 1
+                );
+                $this->db->where('uralensis_request_id', $record_id);
+                $this->db->update('request', $data);
+
+                $json['type'] = 'success';
+                $json['msg'] = '<div class="bg-success alert">Specimen Has Been Successfully Updated.</div>';
+
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = '<div class="bg-danger alert">Some how specimen did not updated successfully or updated already.</div>';
+
+                echo json_encode($json);
+                die;
+            }
+        }
+    }
+
+    public function publish_report() {
+        /* This will update the request in request table */
+        $id = $this->uri->segment(3);
+        //$request_id =  $this->session->userdata('id');
+
+        if (isset($id) && !empty($id)) :
+
+            $data = array(
+                'status' => 1,
+                'specimen_publish_status' => 1,
+                'publish_status' => 1,
+            );
+            $this->db->where('uralensis_request_id', $id);
+            $this->db->update('request', $data);
+            $finalreport_update_message = '<p class="bg-success" style="padding:7px;">Report Has Been Published Now.</p>';
+            $this->session->set_flashdata('final_report_message', $finalreport_update_message);
+            redirect('doctor/update_report/' . $id, 'refresh');
+
+        endif;
+    }
+
+    /*
+     * Add Further Work Controller 
+     * @return type Array
+     */
+
+    public function further_work() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $get_request_id = $this->input->post('record_id');
+        $doctor_id = $this->ion_auth->user()->row()->id;
+
+        /**
+         * Get Lab Name By Request ID. And Send
+         * Mail to Lab Name.
+         * Get Email when getting the lab id.
+         * Then Get the email and send that lab name.
+         * 
+         * @return type Array
+         */
+        $lab_name_from_request_sql = $this->db->query("SELECT serial_number, patient_initial, lab_name, lab_number FROM request WHERE uralensis_request_id = $get_request_id");
+        $get_lab_name_from_request = $lab_name_from_request_sql->row();
+
+        $lab_name_sql = $this->db->query("SELECT * FROM lab_names WHERE lab_name = '$get_lab_name_from_request->lab_name'");
+        $lab_name_result = $lab_name_sql->row();
+
+
+        if (empty($lab_name_result->lab_email)) {
+            $json['type'] = 'error';
+            $json['msg'] = 'Kindly add the lab name first in order to submit the further work.';
+            echo json_encode($json);
+            die;
+        }
+
+        if ($_POST['furtherwork_date'] == '') {
+            $json['type'] = 'error';
+            $json['msg'] = 'Please Select Further Work Date.';
+            echo json_encode($json);
+            die;
+        } elseif ($_POST['description'] == '') {
+            $json['type'] = 'error';
+            $json['msg'] = 'Please Add Further Work Description.';
+            echo json_encode($json);
+            die;
+        } else {
+            $work = array(
+                'furtherword_description' => $this->input->post('description'),
+                'furtherwork_date' => $this->input->post('furtherwork_date'),
+                'furtherwork_status' => 1,
+                'request_id' => $get_request_id,
+                'doctor_id' => $doctor_id,
+                'fw_status' => 'requested',
+                'group_id' => $this->input->post('hospital_group_id')
+            );
+            $this->Doctor_model->further_work($work);
+            $insert_id = $this->db->insert_id();
+            $update_service_code = array(
+                'fw_levels' => $this->input->post('fwlevels'),
+                'fw_immunos' => $this->input->post('immuno'),
+                'fw_imf' => $this->input->post('imf')
+            );
+
+            $this->db->where('uralensis_request_id', $get_request_id);
+            $this->db->update('request', $update_service_code);
+
+            $this->db->where('uralensis_request_id', $get_request_id);
+            $this->db->update('request', array('request_code_status' => 'furtherwork_add'));
+
+            /**
+             * Save Furtherwork in history table
+             */
+            $fw_history_data = array(
+                'Date' => $this->input->post('furtherwork_date'),
+                'Description' => $this->input->post('description')
+            );
+            $history_data = array(
+                'rec_history_user_id' => $doctor_id,
+                'rec_history_record_id' => $get_request_id,
+                'rec_history_data' => serialize($fw_history_data),
+                'rec_history_status' => 'fw_add',
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_history', $history_data);
+
+            $lab_name_email = @unserialize($lab_name_result->lab_email);
+
+            if ($lab_name_email !== FALSE) {
+                //Do nothing
+            } else {
+                $lab_name_email[0] = $lab_name_result->lab_email;
+            }
+
+            $to = '';
+            $bcc1 = '';
+            $bcc2 = '';
+            $bcc3 = '';
+            if (!empty($lab_name_email[0])) {
+                $to = $lab_name_email[0];
+            }
+            if (!empty($lab_name_email[1])) {
+                $bcc1 = $lab_name_email[1];
+            }
+            if (!empty($lab_name_email[2])) {
+                $bcc2 = $lab_name_email[2];
+            }
+            if (!empty($lab_name_email[3])) {
+                $bcc3 = $lab_name_email[3];
+            }
+
+            $fw_emails_list = array();
+            $fw_emails_list[] = $to;
+            $fw_emails_list[] = $bcc1;
+            $fw_emails_list[] = $bcc2;
+            $fw_emails_list[] = $bcc3;
+
+            $message = '';
+            $message .= '<table width="100%" border="1" cellpadding="3" cellspacing="3">';
+            $message .= '<tr>';
+            $message .= '<td width="20%"><strong>Patient Initials:</strong></td>';
+            $message .= '<td>' . $get_lab_name_from_request->patient_initial . '</td>';
+            $message .= '</tr>';
+            $message .= '<tr>';
+            $message .= '<td width="20%"><strong>Further Work Description:</strong></td>';
+            $message .= '<td width="80%">' . $this->input->post('description') . '</td>';
+            $message .= '</tr>';
+            $message .= '<tr>';
+            $message .= '<td width="20%"><strong>Lab Number:</strong></td>';
+            $message .= '<td width="80%">' . $get_lab_name_from_request->lab_number . '</td>';
+            $message .= '</tr>';
+            $message .= '<tr>';
+            $message .= '<td width="20%"><strong>Further Work Request Date:</strong></td>';
+            $message .= '<td width="80%">' . $this->input->post('furtherwork_date') . '</td>';
+            $message .= '</tr>';
+            $message .= '</table>';
+
+            $this->load->library('email');
+            $this->email->set_newline("\r\n");
+            $this->email->from('aleatha@uralensis.com', 'Uralensis');
+            $this->email->to($to);
+            $this->email->bcc($bcc1, $bcc2, $bcc3);
+            $this->email->subject('Uralensis Further Work Request ' . $get_lab_name_from_request->serial_number);
+            $this->email->set_mailtype("html");
+            $this->email->message($message);
+
+            if ($this->email->send()) {
+                //Prepare Data for email logs and update the current entry.
+                $fw_emails = array(
+                    'furtherwork_to_emails' => serialize($fw_emails_list)
+                );
+                $this->db->where('fw_id', $insert_id);
+                $this->db->update('further_work', $fw_emails);
+                $json['type'] = 'success';
+                $json['msg'] = 'Further Work Requested And Email Sent To Lab Name.';
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'Something went wrong while processing your request.' . show_error($this->email->print_debugger());
+                echo json_encode($json);
+                die;
+            }
+        }
+    }
+
+    /* Add Additional Work Controller */
+
+    public function additional_work() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $user_id = $this->ion_auth->user()->row()->id;
+        $req_id = $this->session->userdata('id');
+        $additional_work = array('request_id' => $req_id, 'doctor_id' => $user_id, 'status' => 1, 'description' => $this->input->post('additional_description'), 'data_state' => 'in_session');
+
+        $this->db->where('uralensis_request_id', $req_id);
+        $this->db->update('request', array('additional_data_state' => 'in_session'));
+
+        $this->Doctor_model->additional_work($additional_work);
+
+        /**
+         * Save Supplementary data in record history
+         */
+        $supply_record_data = array(
+            'description' => $this->input->post('additional_description'),
+            'data_state' => 'in_session'
+        );
+        $history_data = array(
+            'rec_history_user_id' => $user_id,
+            'rec_history_record_id' => $req_id,
+            'rec_history_data' => serialize($supply_record_data),
+            'rec_history_status' => 'supple_add',
+            'timestamp' => time()
+        );
+        $this->db->insert('uralensis_record_history', $history_data);
+
+        $get_record_viewed_result = $this->Doctor_model->get_request_viewed_record($req_id);
+
+        if ($get_record_viewed_result != 0) {
+            //$this->db->delete('request_viewed', array('request_viewed_id' => $req_id));
+            $status = array('publish_status' => 1, 'supplementary_review_status' => 'true');
+            $this->db->where('uralensis_request_id', $req_id);
+            $this->db->update('request', $status);
+        }
+        $this->session->set_flashdata('message_additional', 'Submitted Supplementary Work');
+        redirect('doctor/case_review_list/', 'refresh');
+    }
+
+    public function publish_additional_work() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if (isset($_POST['request_id'])) {
+
+            $user_id = $this->ion_auth->user()->row()->id;
+            $req_id = $_POST['request_id'];
+            $this->db->where('request_id', $req_id);
+            $this->db->update('additional_work', array('data_state' => 'save_data'));
+
+            $request_data = array(
+                'additional_data_state' => 'save_data',
+                'supplementary_report_status' => 1,
+                'supplementary_review_status' => 'false'
+            );
+
+            $this->db->where('uralensis_request_id', $req_id);
+            $this->db->update('request', $request_data);
+
+            $this->db->query("DELETE FROM request_viewed WHERE request_viewed.request_viewed_id = $req_id");
+
+            $fw_data = array(
+                'fw_status' => 'complete'
+            );
+            $this->db->where('request_id', $req_id);
+            $this->db->update('further_work', $fw_data);
+
+            /**
+             * Save Supplementary data in record history
+             */
+            $history_data = array(
+                'rec_history_user_id' => $user_id,
+                'rec_history_record_id' => $req_id,
+                'rec_history_data' => '',
+                'rec_history_status' => 'supple_publish',
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_history', $history_data);
+
+            $json['type'] = 'success';
+            $json['msg'] = '<div class="bg-success" style="padding:5px;">Supplementary Report Published Successfully.</div>';
+            echo json_encode($json);
+            die;
+        } else {
+
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="bg-danger">Something Went Wrong While Publishing Supplementary Report.</div>';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /* Search Functionality Code Start */
+
+    public function search_request() {
+
+        $emis_no = $this->input->post('emis_no');
+        $nhs_no = $this->input->post('nhs_no');
+        $f_name = $this->input->post('f_name');
+        $l_name = $this->input->post('l_name');
+        $lab_no = $this->input->post('lab_no');
+
+        $data['query'] = $this->Doctor_model->get_search_request($emis_no, $nhs_no, $f_name, $l_name, $lab_no);
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/search_result', $data);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /* Search Functionality Code End */
+
+    /**
+     * Display 2017 Published Reports
+     */
+    public function published_reports() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/record_latest');
+        $this->load->view('doctor/inc/footer');
+    }
+
+    public function display_published_reports_ajax_processing() {
+
+        $url_year = '';
+        $url_type = '';
+        if (!empty($_POST['year']) && !empty($_POST['type'])) {
+            $url_year = $_POST['year'];
+            $url_type = $_POST['type'];
+        }
+
+        $flag_type = '';
+        if (!empty($_POST['flag_type'])) {
+            $flag_type = $_POST['flag_type'];
+        }
+
+        $sort_authorize = '';
+        if (!empty($_POST['sort_authorize'])) {
+            $sort_authorize = $_POST['sort_authorize'];
+        }
+
+        $list = $this->Doctor_model->display_published_record($url_year, $url_type, $flag_type, $sort_authorize);
+        $data = array();
+        $flag_count = 11;
+        foreach ($list as $record) {
+
+            $row_code = '';
+
+            if (!empty($record->request_code_status) && $record->request_code_status === 'new') {
+                $row_code = 'row_yellow';
+            } elseif (!empty($record->request_code_status) && $record->request_code_status === 'rec_by_lab') {
+                $row_code = 'row_orange';
+            } elseif (!empty($record->request_code_status) && $record->request_code_status === 'pci_added') {
+                $row_code = 'row_purple';
+            } elseif (!empty($record->request_code_status) && $record->request_code_status === 'assign_doctor') {
+                $row_code = 'row_green';
+            } elseif (!empty($record->request_code_status) && $record->request_code_status === 'micro_add') {
+                $row_code = 'row_skyblue';
+            } elseif (!empty($record->request_code_status) && $record->request_code_status === 'add_to_authorize') {
+                $row_code = 'row_blue';
+            } elseif (!empty($record->request_code_status) && $record->request_code_status === 'furtherwork_add') {
+                $row_code = 'row_brown';
+            } elseif (!empty($record->request_code_status) && $record->request_code_status === 'record_publish') {
+                $row_code = 'row_white';
+            }
+
+            $flag_content = '<div class="hover_flags">';
+            $flag_content .= '<div class="flag_images">';
+            if ($record->flag_status === 'flag_red') {
+                $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as urgent." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_red.png') . '">';
+            } elseif ($record->flag_status === 'flag_yellow') {
+                $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for typing." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_yellow.png') . '">';
+            } elseif ($record->flag_status === 'flag_blue') {
+                $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for Pre-Authorization." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_blue.png') . '">';
+            } elseif ($record->flag_status === 'flag_black') {
+                $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as further work." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_black.png') . '">';
+            } elseif ($record->flag_status === 'flag_gray') {
+                $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as awaiting reviews." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_gray.png') . '">';
+            } else {
+                $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_green.png') . '">';
+            }
+            $flag_content .= '</div>';
+            $flag_content .= '<ul class="report_flags list-unstyled list-inline">';
+
+            $active = '';
+            if ($record->flag_status === 'flag_green') {
+                $active = 'flag_active';
+            }
+
+            $flag_content .= '<li class="' . $active . '">';
+            $flag_content .= '<a href="javascript:;" data-flag="flag_green" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+            $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." src="' . base_url('assets/img/flag_green.png') . '">';
+            $flag_content .= '</a>';
+            $flag_content .= '</li>';
+
+            $active = '';
+            if ($record->flag_status === 'flag_red') {
+                $active = 'flag_active';
+            }
+
+            $flag_content .= '<li class="' . $active . '">';
+            $flag_content .= '<a href="javascript:;" data-flag="flag_red" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+            $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as urgent." src="' . base_url('assets/img/flag_red.png') . '">';
+            $flag_content .= '</a>';
+            $flag_content .= '</li>';
+
+            $active = '';
+            if ($record->flag_status === 'flag_yellow') {
+                $active = 'flag_active';
+            }
+
+            $flag_content .= '<li class="' . $active . '">';
+            $flag_content .= '<a href="javascript:;" data-flag="flag_yellow" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+            $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for typing." src="' . base_url('assets/img/flag_yellow.png') . '">';
+            $flag_content .= '</a>';
+            $flag_content .= '</li>';
+
+            $active = '';
+            if ($record->flag_status === 'flag_blue') {
+                $active = 'flag_active';
+            }
+
+            $flag_content .= '<li class="' . $active . '">';
+            $flag_content .= '<a href="javascript:;" data-flag="flag_blue" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+            $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for pre authorization." src="' . base_url('assets/img/flag_blue.png') . '">';
+            $flag_content .= '</a>';
+            $flag_content .= '</li>';
+
+            $active = '';
+            if ($record->flag_status === 'flag_black') {
+                $active = 'flag_active';
+            }
+
+            $flag_content .= '<li class="' . $active . '">';
+            $flag_content .= '<a href="javascript:;" data-flag="flag_black" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+            $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked further work." src="' . base_url('assets/img/flag_black.png') . '">';
+            $flag_content .= '</a>';
+            $flag_content .= '</li>';
+
+            $active = '';
+            if ($record->flag_status === 'flag_gray') {
+                $active = 'flag_active';
+            }
+
+            $flag_content .= '<li class="' . $active . '">';
+            $flag_content .= '<a href="javascript:;" data-flag="flag_gray" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+            $flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked awaiting reviews." src="' . base_url('assets/img/flag_gray.png') . '">';
+            $flag_content .= '</a>';
+            $flag_content .= '</li>';
+            $flag_content .= '</ul>';
+            $flag_content .= '</div>';
+            $flag_content .= '<div class="comments_icon">';
+            $flag_content .= '<a href="javascript:;" id="display_comment_box" class="display_comment_box" data-recordid="' . $record->uralensis_request_id . '" data-modalid="' . $flag_count . '">';
+            $flag_content .= '<img src="' . base_url('assets/img/information.png') . '">';
+            $flag_content .= '</a>';
+            $flag_content .= '<a href="javascript:;" id="show_comments_list" class="show_comments_list" data-recordid="' . $record->uralensis_request_id . '" data-modalid="' . $flag_count . '">';
+            $flag_content .= '<img src="' . base_url('assets/img/chat_comments.png') . '">';
+            $flag_content .= '</a>';
+            $flag_content .= '</div>';
+
+            $flag_content .= '<div id="flag_comment_model-' . $flag_count . '" class="flag_comment_model modal fade" role="dialog" data-backdrop="static" data-keyboard="false">';
+            $flag_content .= '<div class="modal-dialog">';
+            $flag_content .= '<div class="modal-content">';
+            $flag_content .= '<div class="modal-header">';
+            $flag_content .= '<button type="button" class="close" data-dismiss="modal">&times;</button>';
+            $flag_content .= '<h4 class="modal-title">Flag Reason Comment</h4>';
+            $flag_content .= '</div>';
+            $flag_content .= '<div class="modal-body">';
+            $flag_content .= '<div class="flag_msg"></div>';
+            $flag_content .= '<form class="form flag_comments" id="flag_comments_form">';
+            $flag_content .= '<div class="form-group">';
+            $flag_content .= '<textarea name="flag_comment" id="flag_comment" class="form-control flag_comment"></textarea>';
+            $flag_content .= '</div>';
+            $flag_content .= '<div class="form-group">';
+            $flag_content .= '<hr>';
+            $flag_content .= '<input type="hidden" name="record_id" value="' . $record->uralensis_request_id . '">';
+            $flag_content .= '<a class="btn btn-primary" id="flag_comments_save" href="javascript:;">Save Comments</a>';
+            $flag_content .= '</div>';
+            $flag_content .= '</form>';
+            $flag_content .= '</div>';
+            $flag_content .= '</div>';
+            $flag_content .= '</div>';
+            $flag_content .= '</div>';
+
+            $flag_content .= '<div id="display_comments_list-' . $flag_count . '" class="modal fade display_comments_list" role="dialog" data-backdrop="static" data-keyboard="false">';
+            $flag_content .= '<div class="modal-dialog">';
+            $flag_content .= '<div class="modal-content">';
+            $flag_content .= '<div class="modal-header">';
+            $flag_content .= '<button type="button" class="close" data-dismiss="modal">&times;</button>';
+            $flag_content .= '<h4 class="modal-title">Flag Comments</h4>';
+            $flag_content .= '</div>';
+            $flag_content .= '<div class="modal-body">';
+            $flag_content .= '<div class="display_flag_msg"></div>';
+            $flag_content .= '<div class="flag_comments_dynamic_data"></div>';
+            $flag_content .= '</div>';
+            $flag_content .= '<div class="modal-footer">';
+            $flag_content .= '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>';
+            $flag_content .= '</div>';
+            $flag_content .= '</div>';
+            $flag_content .= '</div>';
+            $flag_content .= '</div>';
+
+            $dob = '';
+            if (!empty($record->dob)) {
+                $dob = date('d-m-Y', strtotime($record->dob));
+            }
+
+            $request_time = '';
+            if (!empty($record->request_datetime)) {
+                $request_time = date('d-m-Y', strtotime($record->request_datetime));
+            }
+
+            $rec_by_lab_date = '';
+            if (!empty($record->date_received_bylab)) {
+                $rec_by_lab_date = date('d-m-Y', strtotime($record->date_received_bylab));
+            }
+
+            $publish_date = '';
+            if (!empty($record->publish_datetime)) {
+                $publish_date = date('d-m-Y', strtotime($record->publish_datetime));
+            }
+
+            $record_published = '';
+            if ($record->specimen_update_status == 1 && $record->specimen_publish_status == 1) {
+                $record_published = '<a data-toggle="tooltip" data-placement="top" title="' . $record->serial_number . ' Record Has Been Published Or Completed." href="' . site_url() . '/doctor/doctor_record_detail/' . $record->uralensis_request_id . '"><img src="' . base_url('assets/img/completed.png') . '"></a>';
+            }
+
+            $supply_record = '';
+            if ($record->supplementary_report_status == 1) {
+                $supply_record = '<a data-toggle="tooltip" data-placement="top" title="Supplementary Report Requested For This Record ' . $record->serial_number . '" href="javascript:;"><img src="' . base_url('assets/img/requested.png') . '"></a>';
+            }
+
+            $pdf_doc = '';
+            if ($record->specimen_publish_status == 1) {
+                $pdf_doc = '<a target="_blank" href="' . site_url() . "/doctor/generate_report/" . $record->uralensis_request_id . '"><img src="' . base_url("assets/img/pdf.png") . '" title="Pdf View"></a>';
+            }
+
+            $publish_status = 'Not Published';
+            if ($record->specimen_publish_status == 1) {
+                $publish_status = '<button class="record_id_unpublish btn btn-link" data-recordserial="' . $record->serial_number . '" data-unpublishrecordid="' . site_url() . "/doctor/unpublish_record/" . $record->uralensis_request_id . '">Un-Publish</button>';
+            }
+
+
+            $f_initial = '';
+            $l_initial = '';
+            if (!empty($this->ion_auth->group($record->hospital_group_id)->row()->first_initial)) {
+                $f_initial = $this->ion_auth->group($record->hospital_group_id)->row()->first_initial;
+            }
+            if (!empty($this->ion_auth->group($record->hospital_group_id)->row()->last_initial)) {
+                $l_initial = $this->ion_auth->group($record->hospital_group_id)->row()->last_initial;
+            }
+
+            $row = array();
+            $row[] = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
+            $row[] = $record->serial_number;
+            $row[] = $record->ura_barcode_no;
+            $row[] = $record->f_name;
+            $row[] = $record->sur_name;
+            $row[] = $dob;
+            $row[] = $record->pci_number;
+            $row[] = $record->emis_number;
+            $row[] = $record->nhs_number;
+            $row[] = $record->lab_number;
+            $row[] = '<a class="hospital_initials" data-toggle="tooltip" data-placement="top" title="' . $this->ion_auth->group($record->hospital_group_id)->row()->description . '" href="javascript:;" >' . $f_initial . ' ' . $l_initial . '</a>';
+            $row[] = $record->report_urgency;
+            $row[] = $request_time;
+            $row[] = $rec_by_lab_date;
+            $row[] = $publish_date;
+            $row[] = $record_published;
+            $row[] = $supply_record;
+            $row[] = $pdf_doc;
+            $row[] = $publish_status;
+            $row[] = $flag_content;
+            $row[] = '<p style="display:none;">' . $row_code . '</p>';
+            $row[] = '<p style="display:none;">' . $record->flag_status . '</p>';
+            $data[] = $row;
+
+            $flag_count++;
+        }
+
+        $output = array(
+            "draw" => $_POST['draw'],
+            "recordsTotal" => intval($this->Doctor_model->record_count_all()),
+            "recordsFiltered" => intval($this->Doctor_model->record_count_filtered($url_year, $url_type, $flag_type)),
+            "data" => $data,
+        );
+        //output to json format
+        echo json_encode($output);
+    }
+
+    /* View PDF Before Publish Report */
+
+    public function view_report($id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        if (isset($id) && !empty($id)) {
+            $check_booked_out_status = $this->db->where('ura_rec_track_record_id', $id)->where('ura_rec_track_status', 'Booked out from Lab')->get('uralensis_record_track_status')->row_array();
+
+            $lab_release_date = array();
+            if (!empty($check_booked_out_status) && $check_booked_out_status['ura_rec_track_status'] === 'Booked out from Lab') {
+                $lab_release_date['release_date'] = date('d-m-Y', $check_booked_out_status['timestamp']);
+            }
+            $data1['query1'] = $this->Doctor_model->doctor_record_detail($id);
+            $data2['query2'] = $this->Doctor_model->doctor_record_detail_specimen($id);
+            $data3['query3'] = $this->Doctor_model->get_further_work($id);
+            $data4['query4'] = $this->Doctor_model->get_additional_work_for_prebulish($id);
+            $data5['query5'] = $this->Doctor_model->get_hospital_info($id);
+            $result = array_merge($data1, $data2, $data3, $data4, $data5, $lab_release_date);
+            $this->load->view('doctor/viewpdf', $result);
+        }
+    }
+
+    /* Micrscopic Ajax Code Start : 10 November 2015 */
+
+    public function get_microscopic_ajax_record() {
+        /**
+         * @Direct Access Forbidden
+         */
+//        if (!$this->ion_auth->logged_in()) {
+//            redirect('auth/login', 'refresh');
+//        }
+        /**
+         * @var $micro_id
+         * @var $microscopic_array
+         * @echo Array Value
+         */
+        $microscopic_array = array(
+            '001' => 'This is a Test Text for 001',
+            '007' => 'This is a Test Text for 007'
+        );
+        $micro_id = '';
+        $micro_id = $this->input->post('id');
+        if (!empty($micro_id) && isset($micro_id)) {
+            if (array_key_exists($micro_id, $microscopic_array)) {
+                echo $value = $microscopic_array[$micro_id];
+            } else {
+                echo $value = 'NO Record Found';
+            }
+        }
+        die;
+    }
+
+    /* Perform Upload Files - 11/11/2015 */
+
+    public function doctor_download_section($id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $session_data = array(
+            'record_id' => $id
+        );
+        $this->session->set_userdata($session_data);
+        //$record_id = $this->session->userdata('record_id');
+
+        /* Get Doctor Files Data 11/12/2015 */
+        $files_data["files"] = $this->Doctor_model->fetch_files_data($id);
+        /* Get Doctor Files Data 11/12/2015 */
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/download_section', $files_data);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * Upload Files
+     * Redirect To View
+     */
+    public function do_upload($record_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($record_id) && !empty($record_id)) :
+
+            $config['upload_path'] = './uploads/';
+            $config['allowed_types'] = '*';
+            $config['max_size'] = '9000';
+//        $config['max_width'] = '1024';
+//        $config['max_height'] = '768';
+
+            $this->load->library('upload', $config);
+
+            if (!$this->upload->do_upload()) {
+                $error = array('error' => $this->upload->display_errors());
+
+                // $uplaod_error = '<p class="bg-danger" style="padding:7px;">Something went wrong while uploading your file.</p>';
+                $this->session->set_flashdata('upload_error', $error['error']);
+
+                redirect('doctor/doctor_record_detail/' . $record_id, 'refresh');
+            } else {
+
+                $user = $this->ion_auth->user()->row()->username;
+                $doctor_id = $this->ion_auth->user()->row()->id;
+                $data = $this->upload->data();
+
+                $file_id = $this->Doctor_model->insert_file(
+                        $data['file_name'], $data['raw_name'], $data['full_path'], $data['file_ext'], $data['is_image'], $user, $doctor_id, $record_id
+                );
+
+                $uplaod_success = '<p class="bg-success" style="padding:7px;">File Successfully Uploaded.</p>';
+                $this->session->set_flashdata('upload_success', $uplaod_success);
+                redirect('doctor/doctor_record_detail/' . $record_id, 'refresh');
+
+//            /$this->load->view('doctor/upload_success', $data);
+            }
+
+        endif;
+    }
+
+    public function do_upload_download_section($record_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($record_id) && !empty($record_id)) :
+
+            $config['upload_path'] = './uploads/';
+            $config['allowed_types'] = '*';
+            $config['max_size'] = '9000';
+//        $config['max_width'] = '1024';
+//        $config['max_height'] = '768';
+
+            $this->load->library('upload', $config);
+
+            if (!$this->upload->do_upload()) {
+                $error = array('error' => $this->upload->display_errors());
+
+                // $uplaod_error = '<p class="bg-danger" style="padding:7px;">Something went wrong while uploading your file.</p>';
+                $this->session->set_flashdata('upload_error', $error['error']);
+
+                redirect('doctor/doctor_download_section/' . $record_id, 'refresh');
+            } else {
+
+                $user = $this->ion_auth->user()->row()->username;
+                $doctor_id = $this->ion_auth->user()->row()->id;
+                $data = $this->upload->data();
+
+                $file_id = $this->Doctor_model->insert_file(
+                        $data['file_name'], $data['raw_name'], $data['full_path'], $data['file_ext'], $data['is_image'], $user, $doctor_id, $record_id
+                );
+
+                $uplaod_success = '<p class="bg-success" style="padding:7px;">File Successfully Uploaded.</p>';
+                $this->session->set_flashdata('upload_success', $uplaod_success);
+                redirect('doctor/doctor_download_section/' . $record_id, 'refresh');
+
+//            /$this->load->view('doctor/upload_success', $data);
+            }
+
+        endif;
+    }
+
+    public function delete_record_files() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $record_id = $_GET['record_id'];
+        $file_id = $_GET['file_id'];
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+
+        if (isset($file_id) && isset($doctor_id) && isset($record_id)) :
+
+            $get_file_path_query = $this->db->query("SELECT * FROM files WHERE files_id = $file_id AND user_id = $doctor_id ORDER BY files_id");
+
+            $get_file_path = $get_file_path_query->result();
+
+            $this->db->query("DELETE FROM files WHERE files_id = $file_id AND user_id = $doctor_id ORDER BY files_id");
+
+            //$file_path = $this->session->userdata('file_path');
+
+            unlink($get_file_path[0]->file_path);
+
+            $delete_file = '<p class="bg-warning" style="padding:7px;">File Successfully Deleted.</p>';
+
+            $this->session->set_flashdata('delete_file', $delete_file);
+
+            redirect('doctor/doctor_record_detail/' . $record_id, 'refresh');
+
+        endif;
+    }
+
+    /**
+     * Delete function for download section.
+     * @param type $file_id
+     */
+    public function delete_download_section_files() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $record_id = $_GET['record_id'];
+        $file_id = $_GET['file_id'];
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+
+        if (isset($file_id) && isset($doctor_id) && isset($record_id)) {
+
+            $get_file_path_query = $this->db->query("SELECT * FROM files WHERE files_id = $file_id AND user_id = $doctor_id ORDER BY files_id");
+
+            $get_file_path = $get_file_path_query->result();
+
+            $this->db->query("DELETE FROM files WHERE files_id = $file_id AND user_id = $doctor_id ORDER BY files_id");
+
+            //$file_path = $this->session->userdata('file_path');
+
+            unlink($get_file_path[0]->file_path);
+
+            $delete_file = '<p class="bg-warning" style="padding:7px;">File Successfully Deleted.</p>';
+
+            $this->session->set_flashdata('delete_file', $delete_file);
+
+            redirect('doctor/doctor_download_section/' . $record_id, 'refresh');
+        }
+    }
+
+    public function datatable_record() {
+        $requestData = $_REQUEST;
+        $query = $this->db->query('SELECT * FROM request');
+        $count = $query->num_rows();
+        $totalFiltered = $count;
+        $query->result();
+
+        $json_data = array(
+            //"draw" => intval($requestData['draw']), // for every request/draw by clientside , they send a number as a parameter, when they recieve a response/data they first check the draw number, so we are sending same number in draw. 
+            "recordsTotal" => intval($count), // total number of records
+            "recordsFiltered" => intval($totalFiltered), // total number of records after searching, if there is no searching then totalFiltered = totalData
+            "data" => $query   // total data array
+        );
+
+        $json = json_encode($json_data);  // send data as json format
+//       $this->datatables->select('*');
+//        $this->datatables->from('request');
+//        $json = $this->datatables->generate();
+        //$this->datatables->generate();
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/test_view', $json);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    public function check_auth_pass() {
+        if (isset($_POST)) {
+            $json = array();
+
+            $user_id = $this->ion_auth->user()->row()->id;
+
+            $auth_pass1 = $_POST['auth_pass1'];
+            $auth_pass2 = $_POST['auth_pass2'];
+            $auth_pass3 = $_POST['auth_pass3'];
+            $auth_pass4 = $_POST['auth_pass4'];
+
+            $user_pass = str_split($this->ion_auth->user()->row()->user_auth_pass);
+
+            $request_id = $_POST['request_id'];
+
+            if (empty($user_pass) && !is_array($user_pass)) {
+                $json['type'] = 'error';
+                $json['message'] = '<div class="alert bg-danger">Your Pin is not set yet!</div>';
+                echo json_encode($json);
+                die;
+            }
+            if ($auth_pass1 != '' && $auth_pass2 != '' && $auth_pass3 != '' && $auth_pass4 != '' && !empty($user_pass)) {
+
+                if ($user_pass[0] === $auth_pass1 && $user_pass[1] === $auth_pass2 && $user_pass[2] === $auth_pass3 && $user_pass[3] === $auth_pass4) {
+                    //Check if record already has been published or not.
+                    $check_record_status = $this->db->select('publish_datetime')->where('uralensis_request_id', $request_id)->get('request')->row_array()['publish_datetime'];
+                    if (!empty($check_record_status)) {
+                        $data = array(
+                            'status' => 1,
+                            'specimen_publish_status' => 1,
+                            'publish_status' => 1,
+                            'publish_datetime_modified' => time(),
+                            'record_secretary_status' => 'false',
+                            'authorize_status' => 'false',
+                            'request_code_status' => 'record_publish'
+                        );
+                    } else {
+                        $data = array(
+                            'status' => 1,
+                            'specimen_publish_status' => 1,
+                            'publish_status' => 1,
+                            'publish_datetime' => date('Y-m-d h:i:s'),
+                            'record_secretary_status' => 'false',
+                            'authorize_status' => 'false',
+                            'request_code_status' => 'record_publish'
+                        );
+                    }
+
+                    $this->db->where('uralensis_request_id', $request_id);
+                    $this->db->update('request', $data);
+
+                    if (isset($_POST['mdt_not_select']) && $_POST['mdt_not_select'] === 'mdt_uncheck') {
+                        $data = array(
+                            'mdt_case' => 'not_to_add_to_report',
+                            'mdt_case_status' => 'not_for_mdt'
+                        );
+                        $this->db->where('uralensis_request_id', $request_id);
+                        $this->db->update('request', $data);
+                    }
+
+                    $fw_data = array(
+                        'fw_status' => 'complete'
+                    );
+                    $this->db->where('request_id', $request_id);
+                    $this->db->update('further_work', $fw_data);
+
+                    /**
+                     * Save Publish record history.
+                     */
+                    $history_data = array(
+                        'rec_history_user_id' => $user_id,
+                        'rec_history_record_id' => $request_id,
+                        'rec_history_data' => '',
+                        'rec_history_status' => 'publish',
+                        'timestamp' => time()
+                    );
+                    $this->db->insert('uralensis_record_history', $history_data);
+
+                    $json['type'] = 'success';
+                    $json['message'] = '<div class="alert bg-success">Pin Match. Please Wait......</div>';
+                    echo json_encode($json);
+                    die;
+                } else {
+                    $json['type'] = 'error';
+                    $json['message'] = '<div class="alert bg-danger">Your Pin Did Not Match!</div>';
+                    echo json_encode($json);
+                    die;
+                }
+            } else {
+                $json['type'] = 'error';
+                $json['message'] = '<div class="alert bg-danger">Some thing wrong!</div>';
+                echo json_encode($json);
+                die;
+            }
+        }
+    }
+
+    /**
+     * @return result
+     * Function that will un published the record
+     */
+    public function unpublish_record($id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $unpublish_record_id = $id;
+
+        $update_data = array(
+            'specimen_publish_status' => 0,
+            'report_status' => 1,
+            'record_secretary_status' => 'unset'
+        );
+
+        $this->db->where('uralensis_request_id', $unpublish_record_id);
+        $this->db->update('request', $update_data);
+
+        $record_unpublish_message = '<p class="bg-success" style="padding:7px;">Your Record Has Been Successfully Un-Published.</p>';
+
+        $this->session->set_flashdata('unpublish_record_message', $record_unpublish_message);
+
+        redirect('/institute/doctor_record_list');
+    }
+
+    /**
+     * Add Comment in Comment Section
+     */
+    public function add_comments_section() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if ($_POST['commnet_section'] == '' && empty($this->input->post('commnet_section'))) {
+
+            $json['type'] = 'error';
+            $json['message'] = 'Please Add Comments in Above Area.';
+            echo json_encode($json);
+            die;
+        } else {
+
+            $comment_data = array(
+                'comment_section' => $this->input->post('commnet_section'),
+                'comment_section_date' => date('M j Y g:i A')
+            );
+
+            $this->db->where('uralensis_request_id', $this->input->post('record_id'));
+            $this->db->update('request', $comment_data);
+
+            $json['type'] = 'success';
+            $json['message'] = 'Comments Suuccessfully Added To Report PDF.';
+            echo json_encode($json);
+
+            die;
+        }
+    }
+
+    /**
+     * Remove Comments From Comment Section
+     */
+    public function clear_comments_section() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if ($_POST['commnet_section'] == '' && empty($this->input->post('commnet_section'))) {
+
+            $json['type'] = 'error';
+            $json['message'] = 'There is Already No Comment To Delete From This Section.';
+            echo json_encode($json);
+            die;
+        } else {
+
+            $comment_data = array(
+                'comment_section' => '',
+                'comment_section_date' => ''
+            );
+
+            $this->db->where('uralensis_request_id', $this->input->post('record_id'));
+            $this->db->update('request', $comment_data);
+
+            $json['type'] = 'success';
+            $json['message'] = 'Comments Successfully Removed';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Teaching And MDT Cases Function
+     */
+    public function set_teach_and_mdt() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if (isset($_POST['edu_cats'])) {
+
+            $record_id = $_POST['record_id'];
+            $edu_cat_data = array(
+                'teaching_case' => $_POST['edu_cats']
+            );
+            $this->db->where('uralensis_request_id', $record_id);
+            $this->db->update('request', $edu_cat_data);
+
+            $json['type'] = 'success';
+            $json['msg'] = '<div class="alert alert-success">Education Category Updated.</div>';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Display Teaching Cases Controller
+     */
+    public function teaching_cases() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $edu_cats["edu_cats"] = $this->Doctor_model->get_education_cases_model();
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/teaching_cases', $edu_cats);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * Display MDT Cases Controller
+     */
+    public function mdt_cases() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $hospitals["get_hospitals"] = $this->Doctor_model->display_hospitals_list();
+
+        $result = array_merge($hospitals);
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/mdt_cases', $result);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * New MDT System
+     */
+    public function mdt_cases_new() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $hospitals["get_hospitals"] = $this->Doctor_model->display_hospitals_list();
+
+        $result = array_merge($hospitals);
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/mdt_cases_new', $result);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * Find MDT Dates
+     */
+    public function find_mdt_dates() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode_future = '';
+        $encode_lists = '';
+        if ($_POST['hospital_id'] !== 'false') {
+            $hospital_id = $_POST['hospital_id'];
+
+            //Check if Hospital have MDT List added
+            $check_mdt = $this->db->query("SELECT * FROM uralensis_mdt_lists WHERE uralensis_mdt_lists.ura_mdt_list_hospital_id = $hospital_id")->result();
+
+            if (!empty($check_mdt)) {
+                $encode_lists .= '<select class="form-control mdt_list" name="mdt_list" data-hospitalid="' . $hospital_id . '">';
+                $encode_lists .= '<option value="false">Select MDT List</option>';
+                foreach ($check_mdt as $mdt_list) {
+                    $encode_lists .= '<option value="' . $mdt_list->ura_mdt_list_id . '">' . $mdt_list->ura_mdt_list_name . '</option>';
+                }
+                $encode_lists .= '</select>';
+                $json['type'] = 'success';
+                $json['dates_data'] = $encode_lists;
+                $json['msg'] = 'Following MDT Dates Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $get_mdt_dates = $this->Doctor_model->get_all_mdt_dates($hospital_id);
+                if (!empty($get_mdt_dates)) {
+                    $encode_future .= '<select class="form-control" name="mdt_dates" id="mdt_dates">';
+                    $encode_future .= '<option value="false">Choose Up Coming MDT Dates</option>';
+                    foreach ($get_mdt_dates as $dates) {
+                        $change_mdt_timestamp = date('Y-m-d', $dates->ura_mdt_timestamp);
+                        $encode_future .= '<option value="' . $change_mdt_timestamp . '">' . $dates->ura_mdt_date . '</option>';
+                    }
+                    $encode_future .= '</select>';
+                    $json['type'] = 'success';
+                    $json['dates_data'] = $encode_future;
+                    $json['msg'] = 'Following MDT Dates Found.';
+                    echo json_encode($json);
+                    die;
+                } else {
+                    $json['type'] = 'error';
+                    $json['msg'] = 'NO MDT Found Against the selected Hospital.';
+                    echo json_encode($json);
+                    die;
+                }
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose Hospital First.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_mdt_dates_new() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode_future = '';
+        $encode_lists = '';
+        if ($_POST['hospital_id'] !== 'false') {
+            $hospital_id = $_POST['hospital_id'];
+
+            //Check if Hospital have MDT List added
+            $check_mdt = $this->db->query("SELECT * FROM uralensis_mdt_lists WHERE uralensis_mdt_lists.ura_mdt_list_hospital_id = $hospital_id")->result();
+
+            if (!empty($check_mdt)) {
+                $encode_lists .= '<select class="form-control mdt_list_new" name="mdt_list_new" data-hospitalid="' . $hospital_id . '">';
+                $encode_lists .= '<option value="false">Select MDT List</option>';
+                foreach ($check_mdt as $mdt_list) {
+                    $encode_lists .= '<option value="' . $mdt_list->ura_mdt_list_id . '">' . $mdt_list->ura_mdt_list_name . '</option>';
+                }
+                $encode_lists .= '</select>';
+                $json['type'] = 'success';
+                $json['dates_data'] = $encode_lists;
+                $json['msg'] = 'Following MDT Dates Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $get_mdt_dates = $this->Doctor_model->get_all_mdt_dates($hospital_id);
+                if (!empty($get_mdt_dates)) {
+                    $encode_future .= '<select class="form-control" name="mdt_dates" id="mdt_dates">';
+                    $encode_future .= '<option value="false">Choose Up Coming MDT Dates</option>';
+                    foreach ($get_mdt_dates as $dates) {
+                        $change_mdt_timestamp = date('Y-m-d', $dates->ura_mdt_timestamp);
+                        $encode_future .= '<option value="' . $change_mdt_timestamp . '">' . $dates->ura_mdt_date . '</option>';
+                    }
+                    $encode_future .= '</select>';
+                    $json['type'] = 'success';
+                    $json['dates_data'] = $encode_future;
+                    $json['msg'] = 'Following MDT Dates Found.';
+                    echo json_encode($json);
+                    die;
+                } else {
+                    $json['type'] = 'error';
+                    $json['msg'] = 'NO MDT Found Against the selected Hospital.';
+                    echo json_encode($json);
+                    die;
+                }
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose Hospital First.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_mdt_dates_on_mdt_lists() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode_future = '';
+
+        if ($_POST['list_id'] !== 'false') {
+            $list_id = $_POST['list_id'];
+            $hospital_id = $_POST['hospital_id'];
+
+            $get_mdt_dates = $this->Doctor_model->get_all_mdt_dates_based_on_list($list_id, $hospital_id);
+
+            if (!empty($get_mdt_dates)) {
+                $encode_future .= '<select class="form-control" name="mdt_dates" id="mdt_dates" data-mdtlistid="' . $list_id . '">';
+                $encode_future .= '<option value="false">Choose Up Coming MDT Dates</option>';
+                foreach ($get_mdt_dates as $dates) {
+                    $change_mdt_timestamp = date('Y-m-d', $dates->ura_mdt_timestamp);
+                    $encode_future .= '<option value="' . $change_mdt_timestamp . '">' . $dates->ura_mdt_date . '</option>';
+                }
+                $encode_future .= '</select>';
+                $json ['type'] = 'success';
+                $json['dates_data'] = $encode_future;
+                $json['msg'] = 'Following MDT Dates Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'NO MDT Found Against the selected List.';
+                echo json_encode($json);
+                die;
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose MDT List First.';
+
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_mdt_dates_on_mdt_lists_new() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode_future = '';
+
+        if ($_POST['list_id'] !== 'false') {
+            $list_id = $_POST['list_id'];
+            $hospital_id = $_POST['hospital_id'];
+
+            $get_mdt_dates = $this->Doctor_model->get_all_mdt_dates_based_on_list_new($list_id, $hospital_id);
+
+            if (!empty($get_mdt_dates)) {
+                $encode_future .= '<select class="form-control" name="mdt_dates" id="mdt_dates_new" data-mdtlistid="' . $list_id . '">';
+                $encode_future .= '<option value="false">Choose Up Coming MDT Dates</option>';
+                foreach ($get_mdt_dates as $dates) {
+                    $change_mdt_timestamp = date('Y-m-d', $dates->ura_mdt_timestamp);
+                    $encode_future .= '<option value="' . $change_mdt_timestamp . '">' . $dates->ura_mdt_date . '</option>';
+                }
+                $encode_future .= '</select>';
+                $json ['type'] = 'success';
+                $json['dates_data'] = $encode_future;
+                $json['msg'] = 'Following MDT Dates Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'NO MDT Found Against the selected List.';
+                echo json_encode($json);
+                die;
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose MDT List First.';
+
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_prev_mdt_dates() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode_prev = '';
+        $encode_lists = '';
+        if ($_POST['hospital_id'] !== 'false') {
+            $hospital_id = $_POST['hospital_id'];
+
+            //Check if Hospital have MDT List added
+            $check_mdt = $this->db->query("SELECT * FROM uralensis_mdt_lists WHERE uralensis_mdt_lists.ura_mdt_list_hospital_id = $hospital_id")->result();
+
+            if (!empty($check_mdt)) {
+                $encode_lists .= '<select class="form-control prev_mdt_list" name="prev_mdt_list" data-hospitalid="' . $hospital_id . '">';
+                $encode_lists .= '<option value="false">Select MDT List</option>';
+                foreach ($check_mdt as $mdt_list) {
+                    $encode_lists .= '<option value="' . $mdt_list->ura_mdt_list_id . '">' . $mdt_list->ura_mdt_list_name . '</option>';
+                }
+                $encode_lists .= '</select>';
+                $json['type'] = 'success';
+                $json['dates_prev_data'] = $encode_lists;
+                $json['msg'] = 'Following MDT Dates Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $get_prev_mdt_dates = $this->Doctor_model->get_previous_all_mdt_dates($hospital_id);
+                if (!empty($get_prev_mdt_dates)) {
+                    $encode_prev .= '<select class="form-control" name="prev_mdt_dates" id="prev_mdt_dates">';
+                    $encode_prev .= '<option value="false">Choose Archived MDT Dates</option>';
+                    foreach ($get_prev_mdt_dates as $dates) {
+                        $change_mdt_timestamp = date('Y-m-d', $dates->ura_mdt_timestamp);
+                        $encode_prev .= '<option value="' . $change_mdt_timestamp . '">' . $dates->ura_mdt_date . '</option>';
+                    }
+                    $encode_prev .= '</select>';
+                    $json['type'] = 'success';
+                    $json['dates_prev_data'] = $encode_prev;
+                    $json['msg'] = 'Following Archived MDT Dates Found.';
+                    echo json_encode($json);
+                    die;
+                } else {
+                    $json['type'] = 'error';
+                    $json['msg'] = 'NO Archived MDT Found Against the selected Hospital.';
+                    echo json_encode($json);
+                    die;
+                }
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose Hospital First.';
+
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_prev_mdt_dates_new() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode_prev = '';
+        $encode_lists = '';
+        if ($_POST['hospital_id'] !== 'false') {
+            $hospital_id = $_POST['hospital_id'];
+
+            //Check if Hospital have MDT List added
+            $check_mdt = $this->db->query("SELECT * FROM uralensis_mdt_lists WHERE uralensis_mdt_lists.ura_mdt_list_hospital_id = $hospital_id")->result();
+
+            if (!empty($check_mdt)) {
+                $encode_lists .= '<select class="form-control prev_mdt_list_new" name="prev_mdt_list" data-hospitalid="' . $hospital_id . '">';
+                $encode_lists .= '<option value="false">Select MDT List</option>';
+                foreach ($check_mdt as $mdt_list) {
+                    $encode_lists .= '<option value="' . $mdt_list->ura_mdt_list_id . '">' . $mdt_list->ura_mdt_list_name . '</option>';
+                }
+                $encode_lists .= '</select>';
+                $json['type'] = 'success';
+                $json['dates_prev_data'] = $encode_lists;
+                $json['msg'] = 'Following MDT Dates Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $get_prev_mdt_dates = $this->Doctor_model->get_previous_all_mdt_dates($hospital_id);
+                if (!empty($get_prev_mdt_dates)) {
+                    $encode_prev .= '<select class="form-control" name="prev_mdt_dates" id="prev_mdt_dates">';
+                    $encode_prev .= '<option value="false">Choose Archived MDT Dates</option>';
+                    foreach ($get_prev_mdt_dates as $dates) {
+                        $change_mdt_timestamp = date('Y-m-d', $dates->ura_mdt_timestamp);
+                        $encode_prev .= '<option value="' . $change_mdt_timestamp . '">' . $dates->ura_mdt_date . '</option>';
+                    }
+                    $encode_prev .= '</select>';
+                    $json['type'] = 'success';
+                    $json['dates_prev_data'] = $encode_prev;
+                    $json['msg'] = 'Following Archived MDT Dates Found.';
+                    echo json_encode($json);
+                    die;
+                } else {
+                    $json['type'] = 'error';
+                    $json['msg'] = 'NO Archived MDT Found Against the selected Hospital.';
+                    echo json_encode($json);
+                    die;
+                }
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose Hospital First.';
+
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_prev_mdt_dates_on_mdt_lists() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode_future = '';
+
+        if ($_POST['list_id'] !== 'false') {
+            $list_id = $_POST['list_id'];
+            $hospital_id = $_POST['hospital_id'];
+
+            $get_prev_mdt_dates = $this->Doctor_model->get_previous_all_mdt_dates_based_on_list($list_id, $hospital_id);
+
+            if (!empty($get_prev_mdt_dates)) {
+                $encode_future .= '<select class="form-control" name="prev_mdt_dates" id="prev_mdt_dates" data-mdtlistid="' . $list_id . '">';
+                $encode_future .= '<option value="false">Choose Previous MDT Dates</option>';
+                foreach ($get_prev_mdt_dates as $dates) {
+                    $change_mdt_timestamp = date('Y-m-d', $dates->ura_mdt_timestamp);
+                    $encode_future .= '<option value="' . $change_mdt_timestamp . '">' . $dates->ura_mdt_date . '</option>';
+                }
+                $encode_future .= '</select>';
+                $json ['type'] = 'success';
+                $json['dates_data'] = $encode_future;
+                $json['msg'] = 'Following MDT Dates Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'NO MDT Found Against the selected List.';
+                echo json_encode($json);
+                die;
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose MDT List First.';
+
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_prev_mdt_dates_on_mdt_lists_new() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode_future = '';
+
+        if ($_POST['list_id'] !== 'false') {
+            $list_id = $_POST['list_id'];
+            $hospital_id = $_POST['hospital_id'];
+
+            $get_prev_mdt_dates = $this->Doctor_model->get_previous_all_mdt_dates_based_on_list($list_id, $hospital_id);
+
+            if (!empty($get_prev_mdt_dates)) {
+                $encode_future .= '<select class="form-control" name="prev_mdt_dates" id="prev_mdt_dates_new" data-mdtlistid="' . $list_id . '">';
+                $encode_future .= '<option value="false">Choose Previous MDT Dates</option>';
+                foreach ($get_prev_mdt_dates as $dates) {
+                    $change_mdt_timestamp = date('Y-m-d', $dates->ura_mdt_timestamp);
+                    $encode_future .= '<option value="' . $change_mdt_timestamp . '">' . $dates->ura_mdt_date . '</option>';
+                }
+                $encode_future .= '</select>';
+                $json ['type'] = 'success';
+                $json['dates_data'] = $encode_future;
+                $json['msg'] = 'Following MDT Dates Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'NO MDT Found Against the selected List.';
+                echo json_encode($json);
+                die;
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose MDT List First.';
+
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_mdt_cases() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode = '';
+        if (!empty($_POST['hospital_id']) && !empty($_POST['mdt_date'])) {
+
+            $hospital_id = $_POST['hospital_id'];
+            $mdt_date = $_POST['mdt_date'];
+            $list_id = !empty($_POST['list_id']) ? $_POST['list_id'] : '';
+            $mdt_record = $this->Doctor_model->mdt_cases_list_model($hospital_id, $mdt_date, $list_id);
+
+            if (!empty($mdt_record)) {
+
+                $encode .='<a href="' . base_url('index.php/doctor/generate_word?hospital_id=' . $hospital_id . '&mdt_date=' . $mdt_date . '&mdt_list=' . $list_id) . '">Download Word</a>';
+                $encode .='<a target="_blank" class="pull-right" href="' . base_url('index.php/doctor/generate_mdt_pdf?hospital_id=' . $hospital_id . '&mdt_date=' . $mdt_date . '&mdt_list=' . $list_id) . '">Download PDF</a>';
+                $encode .='<table class="table table-condensed">';
+                $encode .='<tr>';
+                $encode .='<th>Serial No</th>';
+                $encode .='<th>First Name</th>';
+                $encode .='<th>Sur Name</th>';
+                $encode .='<th>EMIS No</th>';
+                $encode .='<th>Gender</th>';
+                $encode .='<th>Authorized</th>';
+                $encode .='</tr>';
+                foreach ($mdt_record as $row) {
+                    $encode .= '<tr>';
+                    $encode .= '<td>' . $row->serial_number . '</td>';
+                    $encode .= '<td>' . $row->f_name . '</td>';
+                    $encode .= '<td>' . $row->sur_name . '</td>';
+                    $encode .= '<td>' . $row->emis_number . '</td>';
+                    $encode .= '<td>' . $row->gender . '</td>';
+                    $authorize_status = 'NO';
+                    if ($row->specimen_publish_status == 1) {
+                        $authorize_status = 'YES';
+                    }
+                    $encode .= '<td>' . $authorize_status . '</td>';
+                    $encode .= '</tr>';
+                }
+                $encode .='</table>';
+                $json['type'] = 'success';
+                $json['mdt_data'] = $encode;
+                $json['msg'] = 'MDT Record Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $encode .= '<tr><td>No Record Found</td></tr>';
+                $json['type'] = 'error';
+                $json['mdt_data'] = $encode;
+                $json['msg'] = 'No MDT Record Found.';
+                echo json_encode($json);
+                die;
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose Hospital First.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_mdt_cases_new() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode = '';
+        if (!empty($_POST['hospital_id']) && !empty($_POST['mdt_date'])) {
+
+            $hospital_id = $_POST['hospital_id'];
+            $mdt_date = $_POST['mdt_date'];
+            $list_id = !empty($_POST['list_id']) ? $_POST['list_id'] : '';
+            $mdt_record = $this->Doctor_model->mdt_cases_list_model_new($hospital_id, $mdt_date, $list_id);
+
+            if (!empty($mdt_record)) {
+
+                $encode .='<a href="' . base_url('index.php/doctor/generate_word_new?hospital_id=' . $hospital_id . '&mdt_date=' . $mdt_date . '&mdt_list=' . $list_id) . '">Download Word</a>';
+                $encode .='<a target="_blank" class="pull-right" href="' . base_url('index.php/doctor/generate_mdt_pdf_new?hospital_id=' . $hospital_id . '&mdt_date=' . $mdt_date . '&mdt_list=' . $list_id) . '">Download PDF</a>';
+                $encode .='<table class="table table-condensed">';
+                $encode .='<tr>';
+                $encode .='<th>Serial No</th>';
+                $encode .='<th>First Name</th>';
+                $encode .='<th>Sur Name</th>';
+                $encode .='<th>EMIS No</th>';
+                $encode .='<th>Gender</th>';
+                $encode .='<th>Authorized</th>';
+                $encode .='</tr>';
+                foreach ($mdt_record as $row) {
+                    $encode .= '<tr>';
+                    $encode .= '<td>' . $row->serial_number . '</td>';
+                    $encode .= '<td>' . $row->f_name . '</td>';
+                    $encode .= '<td>' . $row->sur_name . '</td>';
+                    $encode .= '<td>' . $row->emis_number . '</td>';
+                    $encode .= '<td>' . $row->gender . '</td>';
+                    $authorize_status = 'NO';
+                    if ($row->specimen_publish_status == 1) {
+                        $authorize_status = 'YES';
+                    }
+                    $encode .= '<td>' . $authorize_status . '</td>';
+                    $encode .= '</tr>';
+                }
+                $encode .='</table>';
+                $json['type'] = 'success';
+                $json['mdt_data'] = $encode;
+                $json['msg'] = 'MDT Record Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $encode .= '<tr><td>No Record Found</td></tr>';
+                $json['type'] = 'error';
+                $json['mdt_data'] = $encode;
+                $json['msg'] = 'No MDT Record Found.';
+                echo json_encode($json);
+                die;
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose Hospital First.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Find Previous MDT Cases
+     * 22 Feb 2017
+     */
+    public function find_prev_mdt_cases() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode = '';
+        if (!empty($_POST['hospital_id']) && !empty($_POST['prev_mdt_date'])) {
+
+            $hospital_id = $_POST['hospital_id'];
+            $prev_mdt_date = $_POST['prev_mdt_date'];
+            $list_id = !empty($_POST['list_id']) ? $_POST['list_id'] : '';
+            $mdt_record = $this->Doctor_model->mdt_cases_list_model($hospital_id, $prev_mdt_date, $list_id = '');
+
+            if (!empty($mdt_record)) {
+
+                $encode .='<a href="' . base_url('index.php/doctor/generate_word?hospital_id=' . $hospital_id . '&mdt_date=' . $prev_mdt_date . '&mdt_list=' . $list_id) . '">Download Word</a>';
+                $encode .='<a target="_blank" class="pull-right" href="' . base_url('index.php/doctor/generate_mdt_pdf?hospital_id=' . $hospital_id . '&mdt_date=' . $prev_mdt_date . '&mdt_list=' . $list_id) . '">Download PDF</a>';
+                $encode .='<table class="table table-condensed">';
+                $encode .='<tr>';
+                $encode .='<th>Serial No</th>';
+                $encode .='<th>First Name</th>';
+                $encode .='<th>Sur Name</th>';
+                $encode .='<th>EMIS No</th>';
+                $encode .='<th>Gender</th>';
+                $encode .='</tr>';
+
+                foreach ($mdt_record as $row) {
+
+                    $encode .= '<tr>';
+                    $encode .= '<td>' . $row->serial_number . '</td>';
+                    $encode .= '<td>' . $row->f_name . '</td>';
+                    $encode .= '<td>' . $row->sur_name . '</td>';
+                    $encode .= '<td>' . $row->emis_number . '</td>';
+                    $encode .= '<td>' . $row->gender . '</td>';
+                    $encode .= '</tr>';
+                }
+                $encode .='</table>';
+                $json['type'] = 'success';
+                $json['mdt_prev_data'] = $encode;
+                $json['msg'] = 'Archived MDT Records Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $encode .= '<tr><td>No Record Found</td></tr>';
+                $json['type'] = 'error';
+                $json['mdt_data'] = $encode;
+                $json['msg'] = 'No Archived MDT Records Found.';
+                echo json_encode($json);
+                die;
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose Hospital First.';
+
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function find_prev_mdt_cases_new() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode = '';
+        if (!empty($_POST['hospital_id']) && !empty($_POST['prev_mdt_date'])) {
+
+            $hospital_id = $_POST['hospital_id'];
+            $prev_mdt_date = $_POST['prev_mdt_date'];
+            $list_id = !empty($_POST['list_id']) ? $_POST['list_id'] : '';
+            $mdt_record = $this->Doctor_model->mdt_cases_list_model_new($hospital_id, $prev_mdt_date, $list_id = '');
+
+            if (!empty($mdt_record)) {
+
+                $encode .='<a href="' . base_url('index.php/doctor/generate_word_new?hospital_id=' . $hospital_id . '&mdt_date=' . $prev_mdt_date . '&mdt_list=' . $list_id) . '">Download Word</a>';
+                $encode .='<a target="_blank" class="pull-right" href="' . base_url('index.php/doctor/generate_mdt_pdf_new?hospital_id=' . $hospital_id . '&mdt_date=' . $prev_mdt_date . '&mdt_list=' . $list_id) . '">Download PDF</a>';
+                $encode .='<table class="table table-condensed">';
+                $encode .='<tr>';
+                $encode .='<th>Serial No</th>';
+                $encode .='<th>First Name</th>';
+                $encode .='<th>Sur Name</th>';
+                $encode .='<th>EMIS No</th>';
+                $encode .='<th>Gender</th>';
+                $encode .='</tr>';
+
+                foreach ($mdt_record as $row) {
+
+                    $encode .= '<tr>';
+                    $encode .= '<td>' . $row->serial_number . '</td>';
+                    $encode .= '<td>' . $row->f_name . '</td>';
+                    $encode .= '<td>' . $row->sur_name . '</td>';
+                    $encode .= '<td>' . $row->emis_number . '</td>';
+                    $encode .= '<td>' . $row->gender . '</td>';
+                    $encode .= '</tr>';
+                }
+                $encode .='</table>';
+                $json['type'] = 'success';
+                $json['mdt_prev_data'] = $encode;
+                $json['msg'] = 'Archived MDT Records Found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $encode .= '<tr><td>No Record Found</td></tr>';
+                $json['type'] = 'error';
+                $json['mdt_data'] = $encode;
+                $json['msg'] = 'No Archived MDT Records Found.';
+                echo json_encode($json);
+                die;
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Choose Hospital First.';
+
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function publish_to_post_mdt() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($_GET)) {
+            $record_id = $_GET['record_id'];
+            $hospital_id = $_GET['hospital_id'];
+            $update_status = array(
+                'mdt_case_status' => 'post');
+
+            $this->db->where('uralensis_request_id', $record_id);
+            $this->db->update('request', $update_status);
+            $success = '<div class="alert bg-success">Pending MDT Case Status Successfully Changed To Post MDT.</div>';
+            $this->session->set_flashdata('pending_to_post_success_msg', $success);
+
+            redirect('/doctor/find_mdt_cases?hospital_id=' . $hospital_id);
+        }
+    }
+
+    /**
+     * Teaching Case Detail Controller
+     */
+    public function teaching_case_detail($record_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($record_id)) {
+
+            $data["query"] = $this->Doctor_model->teaching_case_detail_model($record_id);
+
+            $this->load->view('doctor/inc/header');
+            $this->load->view('doctor/teaching_case_detail', $data);
+            $this->load->view('doctor/inc/footer');
+        }
+    }
+
+    /**
+     * MDT Case Detail Controller
+     */
+    public function mdt_case_detail() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($_GET['record_id'])) {
+
+            $record_id = $_GET['record_id'];
+
+            $data1["mdt_cases"] = $this->Doctor_model->mdt_case_detail_model();
+            $data2["mdt_cases_specimen"] = $this->Doctor_model->doctor_record_detail_specimen($record_id);
+
+            $mdt_case_result = array_merge($data1, $data2);
+
+            $this->load->view('doctor/inc/header');
+            $this->load->view('doctor/mdt_case_detail', $mdt_case_result);
+            $this->load->view('doctor/inc/footer');
+        }
+    }
+
+    /**
+     * Remove Teaching Case 
+     * 5 Sep 2016
+     */
+    public function remove_teaching_case($record_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $this->db->query("UPDATE request SET request.teaching_case = 'off' WHERE request.uralensis_request_id = $record_id");
+        $success = '<div class="alert bg-success">Teaching Case Successfully Removed From This Tab.</div>';
+        $this->session->set_flashdata('teaching_success_remove', $success);
+        redirect('doctor/teaching_cases');
+    }
+
+    /**
+     * Remove Pending MDT Case 
+     * 5 Sep 2016
+     */
+    public function remove_mdt_case_pending() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($_GET)) {
+            $record_id = $_GET['record_id'];
+            $hospital_id = $_GET['hospital_id'];
+
+
+            $this->db->query("UPDATE request SET request.mdt_case = 'off' WHERE request.uralensis_request_id = $record_id");
+            $success = '<div class="alert bg-success">Pending MDT Case Successfully Removed From Pending MDT Tab.</div>';
+            $this->session->set_flashdata('pending_mdt_success_remove', $success);
+            redirect('doctor/find_mdt_cases?hospital_id=' . $hospital_id);
+        }
+    }
+
+    /**
+     * Remove Post MDT Case 
+     * 5 Sep 2016
+     */
+    public function remove_mdt_case_post() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($_GET)) {
+            $record_id = $_GET['record_id'];
+            $hospital_id = $_GET['hospital_id'];
+
+            $this->db->query("UPDATE request SET request.mdt_case_status = 'pending' WHERE request.uralensis_request_id = $record_id");
+            $success = '<div class="alert bg-success">Post MDT Case Successfully Removed From Post MDT Tab And Moved To Pending Tab.</div>';
+            $this->session->set_flashdata('post_mdt_success_remove', $success);
+            redirect('doctor/find_mdt_cases?hospital_id=' . $hospital_id);
+        }
+    }
+
+    /**
+     * Display Further Work.
+     */
+    public function view_furtehr_work() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (!empty($_GET) && $_GET['fw_page'] == 'requested') {
+
+            $fw_data1["requested"] = $this->Doctor_model->display_further_work_model_requested();
+            $this->load->view('doctor/inc/header');
+            $this->load->view('doctor/fw_requested', $fw_data1);
+            $this->load->view('doctor/inc/footer');
+        } else if (!empty($_GET) && $_GET['fw_page'] == 'completed') {
+
+            $fw_data2["completed"] = $this->Doctor_model->display_further_work_model_completed();
+            $this->load->view('doctor/inc/header');
+            $this->load->view('doctor/fw_completed', $fw_data2);
+            $this->load->view('doctor/inc/footer');
+        } else {
+
+            redirect('/doctor');
+        }
+    }
+
+    /**
+     * 
+     */
+    public function further_work_complete($fw_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $update_status = array(
+            'fw_status' => 'complete'
+        );
+
+        $this->db->where('fw_id', $fw_id);
+        $this->db->update('further_work', $update_status);
+
+        redirect('/doctor/view_furtehr_work');
+    }
+
+    public function profile_form() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/profile_form');
+        $this->load->view('doctor/inc/footer');
+    }
+
+    public function update_profile() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        } $this->form_validation->set_rules('email_address', 'Email Address', 'valid_email');
+        $this->form_validation->set_rules('phone', 'Phone', 'integer');
+        //$this->form_validation->set_rules('password', 'Password', 'min_length[8]|max_length[15]');
+        $this->form_validation->set_rules('memorable', 'Memorable', 'min_length[10]|max_length[10]');
+        if ($this->form_validation->run() == FALSE) {
+            $this->load->view('doctor/inc/header');
+            $this->load->view('doctor/profile_form');
+            $this->load->view('doctor/inc/footer');
+        } else {
+
+            if ($_FILES['profile_picture']['size'] > 0) {
+
+                $config['upload_path'] = './uploads/';
+                $config['allowed_types'] = 'gif|jpg|png|jpeg';
+                $config['file_name'] = 'profile_picture_' . substr(md5(rand()), 0, 7);
+                $config['overwrite'] = false;
+                $config['max_size'] = '1024';
+                $this->load->library('upload', $config);
+                if (!$this->upload->do_upload('profile_picture')) {
+                    $error = array('error' => $this->upload->display_errors());
+                    $this->session->set_flashdata('upload_error', $error['error']);
+                    $this->load->view('doctor/inc/header');
+                    $this->load->view('doctor/profile_form');
+                    $this->load->view('doctor/inc/footer');
+                } else {
+                    $data = $this->upload->data();
+                }
+            }
+
+            $profile_data = array(
+                'first_name' => $this->input->post('first_name'),
+                'email' => $this->input->post('email_address'),
+                'username' => $this->input->post('username'),
+                'company' => $this->input->post('company'),
+                'last_name' => $this->input->post('last_name'),
+                'phone' => $this->input->post('phone'),
+                'gmc_code' => $this->input->post('gmc_code'),
+                'memorable' => $this->input->post('memorable'),
+                'profile_picture_path' => $data['full_path'],
+                'picture_name' => $data['file_name']
+            );
+
+            $doctor_id = $this->ion_auth->user()->row()->id;
+
+            $this->db->where('id', $doctor_id);
+            $this->db->update('users', $profile_data);
+
+            if ($this->db->affected_rows() > 0) {
+                $success = '<div class="alert bg-success">Your Profile Information Was Successfully Updated.</div>';
+                $this->session->set_flashdata('success_update', $success);
+                redirect('doctor/update_profile');
+            } else {
+                $general_error = '<div class="alert bg-danger">Something Went Wrong While Updating Profile Information.</div>';
+                $this->session->set_flashdata('general_error', $general_error);
+                redirect('doctor/update_profile');
+            }
+        }
+    }
+
+    /**
+     * Filter Results
+     * 8 Sep 2016
+     */
+    public function filter_results() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (!$_POST['hospital_id'] == 0 || !$_POST['report_urgency'] == 0) {
+
+            $hospital_id = $_POST['hospital_id'];
+            $report_urgency = $_POST['report_urgency'];
+
+            $filter_result["filter_data"] = $this->Doctor_model->find_filter_results($hospital_id, $report_urgency);
+
+
+
+            $this->load->view('doctor/inc/header');
+            $this->load->view('doctor/filter_results', $filter_result);
+            $this->load->view('doctor/inc/footer');
+        } else {
+
+            $general_error = '<div class="alert bg-danger">Please Select One of The Filter Option Below.</div>';
+            $this->session->set_flashdata('general_error', $general_error);
+            redirect(
+                    'institute/doctor_record_list');
+        }
+    }
+
+    /**
+     * 
+     */
+    public function change_pin() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $json = array();
+        if (!intval($_POST['new_pin']) || !intval($_POST['new_confirm_pin'])) {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert bg-danger">Use Only Digits.</div>';
+            echo json_encode($json);
+            die;
+        } elseif (intval($_POST['new_confirm_pin']) !== intval($_POST['new_pin'])) {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert bg-danger">Your Confirm Pin Did Not Match.</div>';
+            echo json_encode($json);
+            die;
+        } else {
+            $doctor_id = $this->ion_auth->user()->row()->id;
+            $data = array(
+                'user_auth_pass' => $this->input->post('new_confirm_pin')
+            );
+            $this->db->where('id', $doctor_id);
+            $this->db->update('users', $data);
+
+            $json['type'] = 'success';
+            $json['msg'] = '<div class="alert bg-success">Pin Match and saved successfully.</div>';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Change Password Function
+     * 4 October 2016
+     */
+    public function change_password_doctor() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $password_hash = $this->ion_auth->user()->row()->password;
+        $json = array();
+
+
+        if ($_POST['old_pass'] == '') {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert alert-danger">Please Enter Your Old Password First.</div>';
+            echo json_encode($json);
+            die;
+        }
+        if ($_POST['new_pass'] == '') {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert alert-danger">Please Enter Your New Password.</div>';
+            echo json_encode($json);
+            die;
+        }
+        if ($_POST['new_confirm_pass'] == '') {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert alert-danger">Please Enter Your Confirm New Password.</div>';
+            echo json_encode($json);
+            die;
+        }
+        if (!password_verify($_POST['old_pass'], $password_hash)) {
+            $json['type'] = 'old_pass_error';
+            $json['msg'] = '<div class="alert alert-danger">Your Old Password Did Not Match.</div>';
+            echo json_encode($json);
+            die;
+        }
+        if ($_POST['new_pass'] !== $_POST['new_confirm_pass']) {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert alert-danger">Your Confirm New Password Did Not Match.</div>';
+            echo json_encode($json);
+            die;
+        }
+
+        $pass_options = [
+            'cost' => 11
+        ];
+        $hash_change_pass = password_hash($_POST['new_confirm_pass'], PASSWORD_BCRYPT, $pass_options);
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $data = array(
+            'password' => $hash_change_pass
+        );
+        $this->db->where('id', $doctor_id);
+        $this->db->update('users', $data);
+
+        $json['type'] = 'success';
+        $json['msg'] = '<div class="alert alert-success">Password Successfully Updated.</div>';
+        echo json_encode($json);
+        $this->ion_auth->logout
+        ();
+    }
+
+    /**
+     * Manage Supplementary Reports
+     */
+    public function manage_supplemenary() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $json = array();
+
+        if (!empty($_POST['supple_id'])) {
+            $supple_id = $_POST['supple_id'];
+
+            $this->db->query("DELETE FROM additional_work WHERE additional_id = $supple_id");
+
+            $record_id = $_POST['record_id'];
+            $check_supple_rec = $this->db->query("SELECT * FROM additional_work WHERE additional_work.request_id = $record_id");
+            $check_supply_result = $check_supple_rec->num_rows();
+
+
+            if ($check_supply_result == 0) {
+                $this->db->where('uralensis_request_id', $record_id);
+                $this->db->update('request', array('supplementary_report_status' => 0, 'additional_data_state' => '', 'supplementary_review_status' => 'false'));
+
+                $check_request_year = $this->db->query("SELECT * FROM request WHERE request.uralensis_request_id = $record_id");
+                $get_result = $check_request_year->result();
+                $get_request_date = $get_result [0]->request_datetime;
+                $get_request_year = date('Y', strtotime($get_request_date));
+
+                $redirect_url = base_url('index.php/institute/published_reports_new/' . $get_request_year . '/all');
+                $json['type'] = 'success';
+                $json['redirect_url'] = $redirect_url;
+                $json['supply_val'] = 'false';
+                echo json_encode($json);
+                die;
+            }
+
+            $json['type'] = 'success';
+            $json['msg'] = '<div class="alert bg-success">Successfully Removed</div>';
+            echo json_encode($json);
+            die;
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert bg-danger">Something Wrong While Deleting.</div>';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Download Pending MDT Cases.
+     * 14 Oct 2016
+     */
+    public function download_pending_mdt($hospital_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $group_name = $this->ion_auth->group($hospital_id)->row()->description;
+
+        $date = date('M j Y g:i A');
+
+        $file_name = strtolower($group_name) . '_' . $date . '.csv';
+
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $file_name);
+        $output = fopen('php://output', 'w');
+        fputcsv($output, array(
+            $group_name,
+                )
+        );
+        fputcsv($output, array(
+            'Uralensis NO',
+            'First Name',
+            'Sur Name',
+            'EMIS No',
+            'Gender'
+                )
+        );
+
+        $download_pending_mdt = $this->db->query("SELECT * FROM request
+                        INNER JOIN users_request
+                        INNER JOIN groups
+			INNER JOIN request_assignee
+                        WHERE users_request.request_id = request.uralensis_request_id
+                        AND request.uralensis_request_id = request_assignee.request_id
+                        AND groups.id = users_request.group_id
+                        AND users_request.group_id = $hospital_id
+                        AND request_assignee.user_id = $doctor_id
+                        AND request.mdt_case_status = 'pending'
+                        AND request.mdt_case =  'on'");
+
+        foreach ($download_pending_mdt->result_array() as $row) {
+
+            fputcsv($output, array(
+                'Uralensis NO' => $row['serial_number'],
+                'First Name' => $row['f_name'],
+                'Sur Name' => $row['sur_name'],
+                'EMIS No' => $row['emis_number'],
+                'Gender' => $row['gender']
+                    )
+            );
+        }
+    }
+
+    /**
+     * Download Post MDT Cases.
+     * 15 Oct 2016
+     */
+    public function download_post_mdt($hospital_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $group_name = $this->ion_auth->group($hospital_id)->row()->description;
+
+        $date = date('M j Y g:i A');
+
+        $file_name = strtolower($group_name) . '_' . $date . '.csv';
+
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $file_name);
+        $output = fopen('php://output', 'w');
+        fputcsv($output, array(
+            $group_name,
+                )
+        );
+        fputcsv($output, array(
+            'Uralensis NO',
+            'First Name',
+            'Sur Name',
+            'EMIS No',
+            'Gender'
+                )
+        );
+
+        $download_pending_mdt = $this->db->query("SELECT * FROM request
+                        INNER JOIN users_request
+                        INNER JOIN groups
+			INNER JOIN request_assignee
+                        WHERE users_request.request_id = request.uralensis_request_id
+                        AND request.uralensis_request_id = request_assignee.request_id
+                        AND groups.id = users_request.group_id
+                        AND users_request.group_id = $hospital_id
+                        AND request_assignee.user_id = $doctor_id
+                        AND request.mdt_case_status = 'post'
+                        AND request.mdt_case =  'on'");
+
+        foreach ($download_pending_mdt->result_array() as $row) {
+
+            fputcsv($output, array(
+                'Uralensis NO' => $row['serial_number'],
+                'First Name' => $row['f_name'],
+                'Sur Name' => $row['sur_name'],
+                'EMIS No' => $row['emis_number'],
+                'Gender' => $row['gender']
+                    )
+            );
+        }
+    }
+
+    /**
+     * Display Education Cases Based On Category
+     * 25 Oct 2016
+     */
+    public function display_edu_cases() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if (isset($_POST) && $_POST['edu_cats'] == 0) {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert alert-danger">Please Select the Category</div>';
+            echo json_encode($json);
+            die;
+        } else {
+            $category_id = $_POST['edu_cats'];
+            $edu_cases = $this->Doctor_model->teaching_cases($category_id);
+
+            $json_encode = '';
+            $json_encode .= '<table id="teaching_case_table" class="table table-striped" cellspacing="0" width="100%">';
+
+
+            $json_encode .= '<thead><tr class="info">';
+            $json_encode .= '<th>Serial No</th>';
+            $json_encode .= '<th>First Name</th>';
+            $json_encode .= '<th>Sur Name</th>';
+            $json_encode .= '<th>EMIS No</th>';
+            $json_encode .= '<th>NHS No.</th>';
+            $json_encode .= '<th>LAB No.</th>';
+            $json_encode .= '<th>Gender</th>';
+            $json_encode .= '<th>Request Date</th>';
+            $json_encode .= '<th>Report</th>';
+            $json_encode .= '<th>Detail</th>';
+            $json_encode .= '<th>Status</th>';
+            $json_encode .= '<th>&nbsp;</th>';
+            $json_encode .= '</tr></thead>';
+
+            $json_encode .= '<tfoot><tr class="info">';
+            $json_encode .= '<th>Serial No</th>';
+            $json_encode .= '<th>First Name</th>';
+            $json_encode .= '<th>Sur Name</th>';
+            $json_encode .= '<th>EMIS No</th>';
+            $json_encode .= '<th>NHS No.</th>';
+            $json_encode .= '<th>LAB No.</th>';
+            $json_encode .= '<th>Gender</th>';
+            $json_encode .= '<th>Request Date</th>';
+            $json_encode .= '<th>Report</th>';
+            $json_encode .= '<th>Detail</th>';
+            $json_encode .= '<th>Status</th>';
+            $json_encode .= '<th>&nbsp;</th>';
+            $json_encode .= '</tr></tfoot>';
+
+
+            $json_encode .= '<tbody>';
+            if (!empty($edu_cases)) {
+                foreach ($edu_cases as $row) {
+                    $json_encode .= '<tr>';
+                    $json_encode .= '<td>' . $row['serial_number'] . '</td>';
+                    $json_encode .= '<td>' . $row ['f_name'] . '</td>';
+                    $json_encode .= '<td>' . $row ['sur_name'] . '</td>';
+                    $json_encode .= '<td>' . $row['emis_number'] . '</td>';
+                    $json_encode .= '<td>' . $row['nhs_number'] . '</td>';
+                    $json_encode .= '<td>' . $row['lab_number'] . '</td>';
+                    $json_encode .= '<td>' . $row ['gender'] . '</td>';
+                    $json_encode .= '<td>' . date('M j Y g:i A', strtotime($row['request_datetime'])) . '</td>';
+                    $json_encode .= '<td>';
+                    if ($row['specimen_publish_status'] == 1) {
+                        '<a target="_blank" href="' . base_url('index.php/doctor/generate_report/' . $row['uralensis_request_id']) . '"><img src="' . base_url('assets/img/Pdf_file_symbol_32.png') . '" title="Pdf View"></a>';
+                    } else {
+                        'Not Published';
+                    }
+                    $json_encode .= '</td>';
+                    $json_encode .= '<td><a href="' . site_url() . '/doctor/teaching_case_detail/' . $row['uralensis_request_id'] . '"><img src="' . base_url('assets/img/detail.png') . '"></a></td>';
+                    $json_encode .= '<td>';
+
+                    if ($row ['specimen_update_status'] == 0 && $row['specimen_publish_status'] == 0) :
+                        '<span>Not Updated</span> <img src="' . base_url('assets/img/error.png') . '">';
+                    elseif ($row ['specimen_update_status'] == 1 && $row['specimen_publish_status'] == 0) :
+                        '<span style="color:green;"><strong>Updated ..</strong> &nbsp;&nbsp; </span> <img src="' . base_url('assets/img/update.png') . '">';
+                    elseif ($row ['specimen_update_status'] == 1 && $row['specimen_publish_status'] == 1) :
+                        '<span style="color:green;">Published</span> <img src="' . base_url('assets/img/correct.png') . '">';
+                    endif;
+
+                    $json_encode .= '</td>';
+                    $json_encode .= '<td><a href="' . site_url() . '/doctor/remove_teaching_case/' . $row['uralensis_request_id'] . '"><img src="' . base_url('assets/img/error.png') . '"></a></td>';
+                    $json_encode .= '</tr>';
+                }
+                $json_encode .= '</tbody>';
+                $json_encode .= '</table>';
+                $json['type'] = 'success';
+                $json['edu_data'] = $json_encode;
+                $json['msg'] = '<div class="alert alert-success">Records Found.</div>';
+                echo json_encode($json);
+                die;
+            }
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert alert-danger">No Record Found.</div>';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * 26 Oct 2016
+     * Admin Message Center
+     * Display Message Board
+     */
+    public function messages_center() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $total_unread['unread'] = $this->Doctor_model->get_total_unread_msg($doctor_id);
+        $list_all_users['list_users'] = $this->Doctor_model->get_message_users($doctor_id);
+        $admin_sent_msg['sent_msg'] = $this->Doctor_model->display_doctor_msg_model($doctor_id, 'sent');
+        $admin_inbox_msg['inbox_msg'] = $this->Doctor_model->display_doctor_msg_model($doctor_id, 'inbox');
+        $admin_trash_msg['trash_msg'] = $this->Doctor_model->display_doctor_msg_model($doctor_id, 'trash');
+        $merge_msg_data = array_merge($total_unread, $admin_sent_msg, $admin_inbox_msg, $admin_trash_msg, $list_all_users);
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/message_center/message_center', $merge_msg_data);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    public function get_users_list() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $searchterm = $_GET['term'];
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $names = array();
+        $query = $this->db->query("SELECT * FROM users WHERE users.username LIKE '%$searchterm%' AND users.id != $doctor_id ORDER BY users.username");
+        $result = $query->result_array();
+
+        if (!empty($result)) {
+            $names = array();
+            foreach ($result as $row) {
+                $names[] = array('id' => $row['id'], 'username' => $row['username']);
+            }
+        }
+        $term = trim(strip_tags($_GET ['term']));
+        $matches = array();
+        foreach ($names as $name) {
+
+            if (stripos($name['username'], $term) !== false) {
+                // Add the necessary "value" and "label" fields and append to result set
+                $name['value'] = $name['username'];
+                $name['label'] = "{$name['username']}";
+                $matches[] = $name;
+            }
+        }
+        echo json_encode($matches);
+        die;
+    }
+
+    public function view_private_msg($msg_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (!empty($msg_id)) {
+
+            $display_msg['display_msg'] = $this->Doctor_model->display_msg_model($msg_id);
+
+            $this->db->where('pmto_message', $msg_id);
+            $this->db->update('privmsgs_to', array('pmto_read' => 1));
+
+            $this->load->view('doctor/inc/header');
+            $this->load->view('doctor/message_center/message_view', $display_msg);
+            $this->load->view('doctor/inc/footer');
+        }
+    }
+
+    /**
+     * 27 Oct 2016
+     * Insert Private Message Function
+     */
+    public function insert_pm_by_doctor() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        if ($_POST['list_users'] == 0) {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert alert-danger">Please Choose the User First.</div>';
+            echo json_encode($json);
+            die;
+        }
+        if ($_POST['msg_subject'] == '') {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert alert-danger">Please Add the Subject.</div>';
+            echo json_encode($json);
+            die;
+        }
+        if ($_POST['msg_description'] == '') {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert alert-danger">Please Add the Message Description.</div>';
+            echo json_encode($json);
+            die;
+        }
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $pm_data = array(
+            'privmsg_subject' => $this->input->post('msg_subject'),
+            'privmsg_body' => $this->input->post('msg_description'),
+            'privmsg_author' => $doctor_id
+        );
+
+        $this->db->insert('privmsgs', $pm_data);
+
+        $insert_id = $this->db->insert_id();
+        $pm_to_data = array(
+            'pmto_message' => $insert_id,
+            'pmto_recipient' => $this->input->post('list_users'),
+            'pmto_read' => '0'
+        );
+
+        $this->db->insert('privmsgs_to', $pm_to_data);
+
+        /* Mail Matter Code Start */
+        if (isset($_POST['send_mail'])) {
+            $to_user_id = $this->input->post('list_users');
+            $mail_to_id = $this->ion_auth->user($to_user_id)->row()->email;
+            $doctor_email = $this->ion_auth->user($doctor_id)->row()->email;
+            $subject = $this->input->post('msg_subject');
+            $fname = $this->ion_auth->user($doctor_id)->row()->first_name;
+            $lname = $this->ion_auth->user($doctor_id)->row()->last_name;
+            $message = '';
+            $message .= '<p>You have been received an inbox message from : ' . $fname . ' ' . $lname . '</p>';
+            $message .= '<p>Please Login and go to message center from dashboard to view your message.</p>';
+            $this->load->library('email');
+            $this->email->set_newline("\r\n");
+            $this->email->from($doctor_email, 'Uralensis Message Notification');
+            $this->email->to($mail_to_id);
+            $this->email->subject('Uralensis Message Notification ' . $subject);
+            $this->email->set_mailtype("html");
+            $this->email->message($message);
+            if ($this->email->send()) {
+                $json['type'] = 'success';
+                $json['msg'] = '<div class="alert alert-success">Message Successfully Send.</div>';
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = '<div class="alert alert-danger">Email Not Sent Due To Server Issue.' . show_error($this->email->print_debugger()) . '</div>';
+                echo json_encode($json);
+                die;
+            }
+        }/* Mail Matter Closed and if closed */
+
+        $json['type'] = 'success';
+        $json['msg'] = '<div class="alert alert-success">Message Successfully Send.</div>';
+        echo json_encode($json);
+        die;
+    }
+
+    /**
+     * Admin Sent Trash
+     * 27 oct 2016
+     */
+    public function msg_trashinbox_doctor() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $json = array();
+
+        if (isset($_POST)) {
+            $trash_id = $this->input->post('trash_id');
+            $trash_data = array(
+                'pmto_deleted' => 1
+            );
+            $this->db->where('pmto_message', $trash_id);
+            $this->db->update('privmsgs_to', $trash_data);
+
+            $json['type'] = 'success';
+            $json['msg'] = '<div class="alert alert-success">Trashed.</div>';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Admin Sent Trash
+     * 27 oct 2016
+     */
+    public function msg_trashsent_doctor() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $json = array();
+
+        if (isset($_POST)) {
+            $trash_id = $this->input->post('trash_id');
+            $trash_data = array(
+                'privmsg_deleted' => 1
+            );
+            $this->db->where('privmsg_id', $trash_id);
+            $this->db->update('privmsgs', $trash_data);
+
+            $json['type'] = 'success';
+            $json['msg'] = '<div class="alert alert-success">Trashed.</div>';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Admin Delete Item
+     * 27 oct 2016
+     */
+    public function delete_trash_doctor() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $json = array();
+
+        if (isset($_POST)) {
+            $delete_id = $this->input->post('delete_id');
+            $delete_data = array(
+                'ura_msg_sent_trash_status' => 1
+            );
+            $this->db->where('ura_msg_id', $delete_id);
+            $this->db->delete('uralensis_inbox_msgs');
+
+            $json['type'] = 'success';
+            $json['msg'] = '<div class="alert alert-success">Deleted.</div>';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * 15 November 2016
+     * Add Special Notes
+     */
+    public function add_special_notes() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if ($_POST['special_notes'] == '' && empty($this->input->post('special_notes'))) {
+
+            $json['type'] = 'error';
+            $json['message'] = 'Please Add Special Notes.';
+            echo json_encode($json);
+            die;
+        } else {
+
+            $notes_data = array(
+                'special_notes' => $this->input->post('special_notes'),
+                'special_notes_date' => date('M j Y g:i A'));
+
+            $this->db->where('uralensis_request_id', $this->input->post('record_id'));
+            $this->db->update('request', $notes_data);
+
+            $json['type'] = 'success';
+            $json['message'] = 'Special Notes Suuccessfully Added.';
+            echo json_encode($json);
+
+            die;
+        }
+    }
+
+    /**
+     * 15 November 2016
+     * Remove Special Notes
+     */
+    public function clear_special_notes() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if ($_POST['special_notes'] == '' && empty($this->input->post('special_notes'))) {
+
+            $json['type'] = 'error';
+            $json['message'] = 'There is Already No Special Notes to be Deleted.';
+            echo json_encode($json);
+            die;
+        } else {
+
+            $notes_data = array(
+                'special_notes' => '',
+                'special_notes_date' => '');
+
+            $this->db->where('uralensis_request_id', $this->input->post('record_id'));
+            $this->db->update('request', $notes_data);
+
+            $json['type'] = 'success';
+            $json['message'] = 'Sepcial Notes Successfully Removed.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * @Assign To Another Doctor
+     * 
+     * 16 Nov 2016
+     */
+    public function assign_doctor() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if (isset($_POST) && !$_POST['assign_doctor'] == 0) {
+
+            $record_id = $_POST['record_id'];
+            $doctor_id = $_POST['assign_doctor'];
+            $request_assign = array(
+                'request_id' => $record_id,
+                'user_id' => $doctor_id
+            );
+
+            $this->db->where('request_id', $record_id);
+            $this->db->update('request_assignee', $request_assign);
+
+            $json['type'] = 'success';
+            $json['msg'] = '<div class="alert bg-success">Doctor Assigned to this record successfully. Please wait while page refresh.</div>';
+            echo json_encode($json);
+            die;
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = '<div class="alert bg-danger">Kindly Select the doctor First!</div>';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Assign MDT dates to Record
+     */
+    public function assign_mdt_record() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        if (isset($_POST['mdt_dates_radio']) && $_POST['mdt_dates_radio'] === 'for_mdt') {
+            $record_id = $_POST['record_id'];
+
+            $specimen_data = '';
+            $msdt_specimen_data = $this->input->post('mdt_specimen');
+            if (!empty($msdt_specimen_data)) {
+                $specimen_data = serialize($msdt_specimen_data);
+            }
+            $user_id = $this->ion_auth->user()->row()->id;
+            $username = $this->ion_auth->user($user_id)->row()->username;
+            $data = array(
+                'mdt_case' => '',
+                'mdt_case_status' => $this->input->post('mdt_dates_radio'),
+                'mdt_list_id' => $this->input->post('choose_mdt_list'),
+                'mdt_specimen_status' => $specimen_data,
+                'mdt_case_assignee_username' => $username);
+
+            $this->db->where('uralensis_request_id', $record_id);
+            $this->db->update('request', $data);
+
+            $mdt_dates_array = $this->input->post('mdt_dates');
+            $mdt_list_id = $this->input->post('choose_mdt_list');
+            //Insert MDT Dates into seperate table due to multiple items
+            $this->db->where('record_id', $record_id)->where('mdt_list_id', $mdt_list_id)->delete('uralensis_mdt_records');
+            foreach ($mdt_dates_array as $key => $mdt_date) {
+                $this->db->insert('uralensis_mdt_records', array('mdt_date' => $mdt_date, 'record_id' => $record_id, 'mdt_list_id' => $mdt_list_id));
+            }
+            $json['type'] = 'success';
+            $json['msg'] = 'MDT Date Assign Suuccessfully.!';
+            echo json_encode($json);
+            die;
+        } else {
+            $record_id = $_POST['record_id'];
+            $user_id = $this->ion_auth->user()->row()->id;
+            $username = $this->ion_auth->user($user_id)->row()->username;
+            $data = array(
+                'mdt_case' => $this->input->post('report_option'),
+                'mdt_case_status' => $this->input->post('mdt_dates_radio'),
+                'mdt_case_assignee_username' => $username);
+            $this->db->where('uralensis_request_id', $record_id);
+            $this->db->update('request', $data);
+            $json['type'] = 'success';
+            $json['msg'] = 'MDT Option Added!';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Add MDT Message
+     */
+    public function add_mdt_message() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        if (isset($_POST) && !empty($_POST['mdt_message'])) {
+            $record_id = $_POST['record_id'];
+
+            $data = array(
+                'mdt_case_msg' => $this->input->post('mdt_message'),
+                'mdt_case_msg_timestamp' => time());
+            $this->db->where('uralensis_request_id', $record_id);
+            $this->db->update('request', $data);
+            $json['type'] = 'success';
+            $json['msg'] = 'MDT Message Added!';
+            echo json_encode($json);
+
+            die;
+        }
+    }
+
+    /**
+     * Generate Word
+     */
+    public function generate_word() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        if (!empty($_GET['hospital_id']) && !empty($_GET['mdt_date'])) {
+            $hospital_id = $_GET['hospital_id'];
+            $mdt_date = $_GET['mdt_date'];
+            $mdt_list = !empty($_GET['mdt_list']) ? $_GET['mdt_list'] : '';
+            $mdt_record['mdt_records'] = $this->Doctor_model->mdt_cases_list_model($hospital_id, $mdt_date, $mdt_list);
+
+            $this->load->view('doctor/inc/documents/word', $mdt_record);
+        }
+    }
+
+    public function generate_mdt_pdf() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        if (!empty($_GET['hospital_id']) && !empty($_GET['mdt_date'])) {
+            $hospital_id = $_GET['hospital_id'];
+            $mdt_date = $_GET['mdt_date'];
+            $mdt_list = !empty($_GET['mdt_list']) ? $_GET['mdt_list'] : '';
+            $mdt_record['mdt_records'] = $this->Doctor_model->mdt_cases_list_model($hospital_id, $mdt_date, $mdt_list);
+
+            $this->load->view('doctor/inc/documents/mdt_pdf', $mdt_record);
+        }
+    }
+
+    public function generate_word_new() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        if (!empty($_GET['hospital_id']) && !empty($_GET['mdt_date'])) {
+            $hospital_id = $_GET['hospital_id'];
+            $mdt_date = $_GET['mdt_date'];
+            $mdt_list = !empty($_GET['mdt_list']) ? $_GET['mdt_list'] : '';
+            $mdt_record['mdt_records'] = $this->Doctor_model->mdt_cases_list_model_new($hospital_id, $mdt_date, $mdt_list);
+
+            $this->load->view('doctor/inc/documents/word', $mdt_record);
+        }
+    }
+
+    public function generate_mdt_pdf_new() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        if (!empty($_GET['hospital_id']) && !empty($_GET['mdt_date'])) {
+            $hospital_id = $_GET['hospital_id'];
+            $mdt_date = $_GET['mdt_date'];
+            $mdt_list = !empty($_GET['mdt_list']) ? $_GET['mdt_list'] : '';
+            $mdt_record['mdt_records'] = $this->Doctor_model->mdt_cases_list_model_new($hospital_id, $mdt_date, $mdt_list);
+
+            $this->load->view('doctor/inc/documents/mdt_pdf', $mdt_record);
+        }
+    }
+
+    /**
+     * 27 Jan 2017
+     * Display Review Cases List
+     */
+    public function case_review_list() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $data["query"] = $this->Doctor_model->doctor_review_case_model($doctor_id);
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/display_review_cases', $data);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * Save Flag Comments
+     * 2 Feb 2017
+     */
+    public function save_flag_comments() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        if (!empty($_POST['flag_comment'])) {
+
+            $record_id = $_POST['record_id'];
+            $flag_comments = $_POST['flag_comment'];
+            $user_id = $this->ion_auth->user()->row()->id;
+
+            $comments_data = array(
+                'ufc_record_id' => $record_id,
+                'ufc_comments' => strip_tags($flag_comments),
+                'ufc_user_id' => $user_id,
+                'ufc_timestamp' => time());
+            $this->db->insert('uralensis_flag_comments', $comments_data);
+
+//            $this->db->where('uralensis_request_id', $record_id);
+//            $this->db->update('request', array('flag_status_comment' => $flag_comments));
+
+            $json['type'] = 'success';
+            $json['msg'] = 'Case Marked as Flagged Successfully.';
+            echo json_encode($json);
+            die;
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Please Add The Comments First.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Change Flag Status
+     * 10 Feb 2017
+     */
+    public function set_flag_status() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode = '';
+        if (!empty($_POST['record_id']) && !empty($_POST['flag_status'])) {
+
+            $record_id = $_POST['record_id'];
+            $flag = $_POST['flag_status'];
+
+            $flag_data = array('flag_status' => $flag);
+
+            $this->db->query("UPDATE request SET request.flag_status = '$flag' WHERE request.uralensis_request_id = $record_id");
+
+//            $this->db->where('uralensis_request_id', $record_id);
+//            $this->db->update('request', $flag_data);
+
+            $query = $this->db->query("SELECT flag_status FROM request WHERE request.uralensis_request_id = $record_id");
+            $check_status = $query->result_array();
+
+//            $get_flag_status = $check_status[0]['flag_status'];
+//
+//            switch ($get_flag_status) {
+//                case 'flag_red':
+//                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as urgent." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_red.png') . '">';
+//                    break;
+//                case 'flag_yellow':
+//                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for typing." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_yellow.png') . '">';
+//                    break;
+//                case 'flag_blue':
+//                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for pre authorization." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_blue.png') . '">';
+//                    break;
+//                case 'flag_black':
+//                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for further work." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_black.png') . '">';
+//                    break;
+//                case 'flag_gray':
+//                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as awaiting reviews." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_gray.png') . '">';
+//                    break;
+//                default:
+//                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_green.png') . '">';
+//                    break;
+//            }
+
+            $json['type'] = 'success';
+//            $json['flag_data'] = $encode;
+            $json['msg'] = 'Flag status changed successfully.';
+            echo json_encode($json);
+            die;
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Some how flag status did not updated.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * 21 Feb 2017
+     * Show Comments Box
+     */
+    public function show_comments_box() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $encode_data = '';
+        if (isset($_POST) && !empty($_POST['record_id'])) {
+            $user_id = $this->ion_auth->user()->row()->id;
+            $record_id = $_POST['record_id'];
+
+            $flag_data = $this->Doctor_model->get_flag_commnets_record($user_id, $record_id);
+            if (!empty($flag_data)) {
+                $encode_data .= '<div class="flag_container">';
+                $encode_data .= '<ul class="flag_items">';
+                foreach ($flag_data as $flag) {
+                    $first_name = $this->ion_auth->user($flag->ufc_user_id)->row()->first_name;
+                    $last_name = $this->ion_auth->user($flag->ufc_user_id)->row()->last_name;
+                    $full_name = $first_name . ' ' . $last_name;
+                    $flag_time = date('d-m-Y h:i a', $flag->ufc_timestamp);
+                    $encode_data .= '<li>';
+                    $encode_data .= '<p>' . $flag->ufc_comments . '</p>';
+                    $encode_data .= '</hr>';
+                    if ($user_id === $flag->ufc_user_id) {
+                        $encode_data .= '<a class="pull-left" href="javascript:;" id="delete_flag_comment" data-flagid="' . $flag->ufc_id . '">Delete</a>';
+                    }
+                    $encode_data .= '<span class="pull-right">' . $flag_time . '</span>';
+                    $encode_data .= '<span class="pull-right" href="javascript:;">Added By : ' . $full_name . '</span>';
+                    $encode_data .= '<div class="clearfix"></div>';
+                    $encode_data .= '</li>';
+                }
+                $encode_data .= '</ul>';
+                $encode_data .= '</div>';
+
+                $json['type'] = 'success';
+                $json['msg'] = 'Comments Found';
+                $json['flag_data'] = $encode_data;
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'Flag Comments Not Yet Added For This Record!';
+                echo json_encode($json);
+                die;
+            }
+        }
+    }
+
+    /**
+     * Delete Flag Comments
+     * 22 Feb 2017
+     */
+    public function delete_flag_comments() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        if (isset($_POST) && !empty($_POST['flag_id'])) {
+
+            $flag_id = $_POST['flag_id'];
+
+            $this->db->query("DELETE FROM uralensis_flag_comments WHERE uralensis_flag_comments.ufc_id = $flag_id");
+
+            $json['type'] = 'success';
+            $json['msg'] = 'Flag Comment Deleted Successfully!';
+
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    public function set_populate_micro_data() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        if (!empty($_POST['micro_code'])) {
+            $micro_code = $_POST['micro_code'];
+            $micro_data = $this->Doctor_model->populate_micro_records_model($micro_code);
+            if (!empty($micro_data)) {
+                echo json_encode($micro_data[0]);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'No Record Found';
+                echo json_encode($json);
+                die;
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'No Record Found';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Add record to authorization Queue
+     * 11 March 2017
+     */
+    public function add_record_to_authorization() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $user_id = $this->ion_auth->user()->row()->id;
+
+        $json = array();
+        if (!empty($_POST['record_id'])) {
+
+            $record_id = $_POST ['record_id'];
+
+            $this->db->where('uralensis_request_id', $record_id);
+            $this->db->update('request', array('authorize_status' => 'true', 'request_code_status' => 'add_to_authorize'));
+            $json['type'] = 'success';
+            $json['msg'] = 'Record successfully added to authorization queue.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Display Authorization Queue Records
+     * 16 March 2017
+     */
+    public function authorization_queue() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $auth_queue['auth_queue'] = $this->Doctor_model->display_auth_queue_record_model($doctor_id);
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/authorization_queue_records', $auth_queue);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * Publish Authorization Reports Bulk
+     * 16 March 2017
+     */
+    public function publish_bulk_reports_authrization() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $user_id = $this->ion_auth->user()->row()->id;
+        $json = array();
+        if (isset($_POST)) {
+            $json = array();
+
+            $auth_pass1 = $_POST['password1'];
+            $auth_pass2 = $_POST['password2'];
+            $auth_pass3 = $_POST['password3'];
+            $auth_pass4 = $_POST['password4'];
+
+            $user_pass = str_split($this->ion_auth->user()->row()->user_auth_pass);
+
+            $request_id = $_POST['record_ids'];
+
+            if (!empty($auth_pass1) && !empty($auth_pass2) && !empty($auth_pass3) && !empty($auth_pass4) && !empty($user_pass)) {
+
+                if ($user_pass[0] === $auth_pass1 && $user_pass[1] === $auth_pass2 && $user_pass[2] === $auth_pass3 && $user_pass[3] === $auth_pass4) {
+
+                    $data = array(
+                        'status' => 1,
+                        'specimen_publish_status' => 1,
+                        'publish_status' => 1,
+                        'publish_datetime' => date('Y-m-d h:i A'),
+                        'record_secretary_status' => 'false',
+                        'authorize_status' => 'false'
+                    );
+                    $fw_data = array(
+                        'fw_status' => 'complete'
+                    );
+                    $mdt_data = array(
+                        'mdt_case' => 'not_to_add_to_report',
+                        'mdt_case_status' => 'not_for_mdt'
+                    );
+                    foreach ($request_id as $record) {
+                        $this->db->where('uralensis_request_id', $record);
+                        $this->db->update('request', $mdt_data);
+                        $this->db->where('uralensis_request_id', $record);
+                        $this->db->update('request', $data);
+                        $this->db->where('request_id', $record);
+                        $this->db->update('further_work', $fw_data);
+                    }
+
+                    $json['type'] = 'success';
+                    $json['message'] = '<div class="alert bg-success">Pin Match. Please Wait......</div>';
+                    echo json_encode($json);
+                    die;
+                } else {
+                    $json['type'] = 'error';
+                    $json['message'] = '<div class="alert bg-danger">Your Pin Did Not Match!</div>';
+                    echo json_encode($json);
+                    die;
+                }
+            } else {
+
+                $json['type'] = 'error';
+                $json['message'] = '<div class="alert bg-danger">Some thing wrong!</div>';
+                echo json_encode($json);
+                die;
+            }
+        }
+    }
+
+    /**
+     * Microscopic Code Autosuggest 
+     */
+    public function microscopic_autosuggest() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (isset($_REQUEST['query'])) {
+
+            $search_query = $_REQUEST['query'];
+
+            $sql = "SELECT * FROM uralensis_micro_codes WHERE uralensis_micro_codes.umc_code LIKE '%{$search_query}%'";
+            $query = $this->db->query($sql);
+            $array = array();
+
+            foreach ($query->result() as $row) {
+                $array[] = $row->umc_code;
+            }
+
+            echo json_encode($array); //Return the JSON Array
+        }
+    }
+
+    /**
+     * Find Matching Lab Number
+     * 10 March 2017
+     */
+    public function find_lab_number_records() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        if (!empty($_POST['lab_number'])) {
+            $lab_number = $_POST['lab_number'];
+
+            $lab_prefix = substr($lab_number, 0, 2);
+
+            $find_lab = $this->db->query("SELECT * FROM request WHERE request.lab_number = '$lab_number'");
+            $check_lab = $find_lab->result();
+
+            if (($lab_number != 'U' && strlen($lab_number) == 1 ) && ( $lab_number != 'S' && strlen($lab_number) == 1 ) &&
+                    ($lab_number != 'H' && strlen($lab_number) == 1)
+            ) {
+                $json['type'] = 'error';
+                $json['msg'] = 'The string length must be one letter and letter should be U, S, H and in capital form.';
+                echo json_encode($json);
+                die;
+            } else if (($lab_number == 'U') || ( $lab_number == 'S') ||
+                    ( $lab_number == 'H') &&
+                    (strlen($lab_number) == 1)) {
+                $json['type'] = 'success';
+                $json['msg'] = 'The lab number combination is new and you can proceed to add request now.';
+                echo json_encode($json);
+                die;
+            } else {
+                $find_lab = $this->db->query("SELECT * FROM request WHERE request.lab_number = '$lab_number'");
+                $check_lab = $find_lab->result();
+
+                if (!empty($check_lab) && $lab_number === $check_lab[0]->lab_number) {
+                    $json['type'] = 'error';
+                    $json['msg'] = 'Lab Number Already Exists.';
+                    echo json_encode($json);
+                    die;
+                } else {
+                    $json['type'] = 'success';
+                    $json['msg'] = 'The lab number combination is new and you can proceed to add request now.';
+                    echo json_encode($json);
+                    die;
+                }
+            }
+        }
+    }
+
+    /**
+     * Check User Status on every after 3 seconds
+     */
+//    public function check_user_status() {
+//        if (!$this->ion_auth->logged_in()) {
+//            redirect('auth/login', 'refresh');
+//        }
+//        $user_id = $this->ion_auth->user()->row()->id;
+//        if (isset($_POST) && !empty($_POST['user_status']) && !empty($_POST['record_id'])) {
+//
+//            $record_id = $this->input->post('record_id');
+//            $user_status = $this->input->post('user_status');
+//            $timestamp = time();
+//
+//            $check_data = $this->db->query("SELECT * FROM user_live_status WHERE user_live_status.uls_record_id = $record_id AND user_live_status.uls_user_id = $user_id")->result_array();
+//
+//            if (!empty($check_data)) {
+//                $this->db->where('uls_record_id', $record_id);
+//                $this->db->update('user_live_status', array('uls_timestamp' => $timestamp));
+//            } else {
+//                $insert_data = array(
+//                    'uls_user_id' => $user_id,
+//                    'uls_user_status' => $user_status,
+//                    'uls_record_id' => $record_id,
+//                    'uls_timestamp' => $timestamp
+//                );
+//                $this->db->insert('user_live_status', $insert_data);
+//            }
+//
+////            $this->db->query("INSERT INTO user_live_status
+////                (uls_user_id, uls_user_status, uls_record_id, uls_timestamp)
+////                VALUES( $user_id, '$user_status', $record_id, $timestamp)
+////                ON DUPLICATE KEY UPDATE
+////                uls_user_id = uls_user_id, uls_timestamp = $timestamp");
+//
+//            /* Select Data which is not equal to Current User */
+//            $user_query = $this->db->query("SELECT * FROM user_live_status
+//                WHERE user_live_status.uls_user_id != $user_id AND user_live_status.uls_record_id = $record_id")->result_array();
+//
+//            $first_name = '';
+//            $last_name = '';
+//            $full_name = array();
+//            $json['user_status'] = 'offline';
+//            if (!empty($user_query)) {
+//                $json['user_status'] = 'online';
+//                foreach ($user_query as $key => $data) {
+//                    $user_id = $data['uls_user_id'];
+//                    if (!empty($this->ion_auth->user($user_id)->row()->first_name)) {
+//                        $first_name = $this->ion_auth->user($user_id)->row()->first_name;
+//                    }
+//                    if (!empty($this->ion_auth->user($user_id)->row()->last_name)) {
+//                        $last_name = $this->ion_auth->user($user_id)->row()->last_name;
+//                    }
+//
+//                    $full_name[] = $first_name . ' ' . $last_name;
+//                }
+//            }
+//
+//            $verb = 'is';
+//            if (count($full_name) > 1) {
+//                $verb = 'are';
+//            }
+//
+//            $json['user_name'] = 'Currently ' . implode('&nbsp;&&nbsp;', $full_name) . ' ' . $verb . ' viewing this record.';
+//            echo json_encode($json);
+//            die;
+//        } else {
+//            $this->db->where('uls_user_id', $user_id);
+//            $this->db->delete('user_live_status');
+//        }
+//    }
+
+    /**
+     * Opinion Cases Display
+     */
+    public function doctor_opinion_cases() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $opinion_cases['opinion_cases'] = $this->Doctor_model->display_opinion_cases($doctor_id);
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/opinion_cases/opinion_cases', $opinion_cases);
+        $this->load->view(
+                'doctor/inc/footer');
+    }
+
+    /**
+     * Delete MDT Record Note
+     */
+    public function delete_mdt_record_note() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if (!empty($_POST['record_id'])) {
+            $record_id = $this->input->post('record_id');
+            $this->db->where('uralensis_request_id', $record_id);
+            $this->db->update('request', array('mdt_case_msg' => '', 'mdt_case_msg_timestamp' => '', 'mdt_case_add_to_report_status' => 0));
+
+            $json['type'] = 'success';
+            $json['msg'] = 'Record Deleted Successfully.';
+            echo json_encode($json);
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Something wrong while deleting this record.';
+            echo json_encode($json);
+        }
+    }
+
+    /**
+     * Add MDT note on report.
+     */
+    public function add_mdt_record_note_on_report() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if (!empty($_POST['record_id'])) {
+            $record_id = $this->input->post('record_id');
+
+            if ($_POST['mdt_status'] === 'mdt_not_add') {
+                $mdt_add_report_status = 1;
+                $mdt_add_report_msg = 'MDT Note Added Successfully.';
+            } else {
+                $mdt_add_report_status = 0;
+                $mdt_add_report_msg = 'MDT Note not added on report.';
+            }
+
+            $this->db->where('uralensis_request_id', $record_id);
+            $this->db->update('request', array('mdt_case_add_to_report_status' => $mdt_add_report_status));
+
+            $json['type'] = 'success';
+            $json['msg'] = $mdt_add_report_msg;
+            echo json_encode($json);
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Something wrong while adding mdt on report.';
+            echo json_encode($json)
+
+            ;
+        }
+    }
+
+    /**
+     * Assign Opinion Cases
+     */
+    public function assign_opinion_cases() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+
+        if (empty($_POST['opinion_case_doctors'])) {
+            $json['type'] = 'error';
+            $json['msg'] = 'Please choose the doctor first';
+            echo json_encode($json);
+            die;
+        }
+
+        if ($_POST['opinion_comment'] === '') {
+            $json['type'] = 'error';
+            $json['msg'] = 'Please add the opinion description.';
+            echo json_encode($json);
+            die;
+        }
+
+        $opinion_data_array = array(
+            'ura_opinion_doctor_id' => $doctor_id,
+            'ura_opinion_req_id' => !empty($_POST['record_id']) ? $this->input->post('record_id') : '',
+            'ura_opinion_parent_id' => '0',
+            'ura_opinion_date' => !empty($_POST['opinion_date']) ? strtotime($this->input->post('opinion_date')) : '',
+            'ura_opinion_comments' => !empty($_POST['opinion_comment']) ? $this->input->post('opinion_comment') : '',
+            'ura_opinion_timestamp' => time()
+        );
+
+        $this->db->insert('uralensis_opinions', $opinion_data_array);
+
+        $opinion_id = $this->db->insert_id();
+
+        if (!empty($_POST['opinion_case_doctors'])) {
+            foreach ($_POST['opinion_case_doctors'] as $key => $value) {
+                $opinion_recp_data = array(
+                    'recipient_id' => $value,
+                    'ura_opinion_id' => !empty($opinion_id) ? $opinion_id : '',);
+                $this->db->insert('uralensis_opinion_recipient', $opinion_recp_data);
+            }
+        }
+
+        $json['type'] = 'success';
+        $json['msg'] = 'Opinion  Requested Successfully.';
+        echo json_encode($json);
+
+        die;
+    }
+
+    /**
+     * Opinion Record Detail
+     */
+    public function opinion_record_detail($id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (!empty($id)) {
+
+            $doctor_id = $this->ion_auth->user()->row()->id;
+            $data['request_query'] = $this->Doctor_model->opinion_record_detail_model($id);
+            $specimen_data['specimen_query'] = $this->Doctor_model->opinion_record_detail_specimen($id);
+            $supplemnt_data['supplementary_query'] = $this->Doctor_model->get_supplementary($id);
+            $nhs_number = $data['request_query'][0]->nhs_number;
+            $related_posts ['related_query'] = $this->Doctor_model->related_posts_model($id, $nhs_number);
+            $edu_cats['education_cats'] = $this->Doctor_model->get_education_cases_model();
+            $cpc_cats['cpc_cats'] = $this->Doctor_model->get_cpc_cases_model();
+            $hospital_group_id = $data['request_query'][0]->hospital_group_id;
+            $mdt_cats['mdt_cats'] = $this->Doctor_model->get_mdt_cases_model($hospital_group_id);
+            $doctors_list['list_doctors'] = $this->Doctor_model->list_doctors();
+            $user_rec_edit_status['record_edit_status'] = $this->Doctor_model->get_one_user_record_edit_status($id);
+            $user_rec_edit_status_full['record_edit_status_full'] = $this->Doctor_model->get_user_record_edit_status($id);
+            $mdt_list['mdt_list'] = $this->Doctor_model->display_mdt_list_model($hospital_group_id);
+            $micro_codes['micro_codes'] = $this->Doctor_model->micro_codes_records_model();
+            $opinion_data ['opinion_data'] = $this->Doctor_model->get_opinion_comments($id, $doctor_id);
+            $opinion_data_reply['opinion_data_reply'] = $this->Doctor_model->get_opinion_comments_reply($id, $doctor_id);
+            $datasets_data['datasets'] = $this->Doctor_model->get_datasets_data();
+            $record_history['record_history'] = $this->Doctor_model->get_record_history_data($id);
+
+            $record_id = $id;
+            $user_id = $this->ion_auth->user()->row()->id;
+
+            $record_user_data['user_record_data'] = array(
+                'record_id' => $record_id,
+                'user_id' => $user_id
+            );
+
+            $change_status = array('report_status' => 0);
+
+            $this->db->where('uralensis_request_id', $id);
+            $this->db->update('request', $change_status);
+
+            /* Get Doctor Files Data 11/12/2015 */
+            $files_data["files"] = $this->Doctor_model->fetch_files_data($id);
+            /* Get Doctor Files Data 11/12/2015 */
+        } $data_and_files = array_merge($data, $specimen_data, $files_data, $supplemnt_data, $related_posts, $edu_cats, $cpc_cats, $mdt_cats, $doctors_list, $user_rec_edit_status, $user_rec_edit_status_full, $micro_codes, $opinion_data, $opinion_data_reply, $datasets_data, $record_history, $mdt_list);
+
+        /* Include The Comment Section Template */
+
+        require_once('application/views/doctor/comment_section.php');
+        require_once('application/views/doctor/manage_supplementary.php');
+        require_once('application/views/doctor/manage_documents.php');
+        require_once('application/views/doctor/related_posts.php');
+        require_once('application/views/doctor/get_specimens.php');
+        require_once('application/views/doctor/special_notes.php');
+        require_once('application/views/doctor/opinion_cases/get_opinion_cases.php');
+        require_once('application/views/doctor/inc/functions.php');
+        require_once('application/views/doctor/datasets/datasets.php');
+        require_once('application/views/doctor/record_history/record_history-functions.php');
+//Get Pre Publish Report View File.
+//        require_once('application/views/doctor/viewpdf.php');
+        /* ------------------------------------ */
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/record_detail', $data_and_files);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * Display Docotor Invoices Section
+     */
+    public function display_invoices() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $invoice_data['invoices_data'] = $this->Doctor_model->display_invoices_model($doctor_id);
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/invoices/display_invoices', $invoice_data);
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * Save Opinion Reply
+     */
+    public function save_opinion_reply() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $json = array();
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        if (!empty($_POST)) {
+            $reply_desc = $this->input->post('opinion_reply');
+            $reply_date = $this->input->post('opinion_reply_date');
+            $record_id = $this->input->post('record_id');
+            $opinion_doctor = $this->input->post('opinion_doctor_id');
+
+            if (empty($reply_desc)) {
+                $json['type'] = 'error';
+                $json['msg'] = 'Please add the description first.';
+                echo json_encode($json);
+                die;
+            }
+
+            $reply_data = array(
+                'ura_opinion_doctor_id' => $doctor_id,
+                'ura_opinion_req_id' => $record_id,
+                'ura_opinion_parent_id' => 1,
+                'ura_opinion_date' => strtotime($reply_date),
+                'ura_opinion_comments' => $reply_desc,
+                'ura_opinion_timestamp' => time()
+            );
+            $this->db->insert('uralensis_opinions', $reply_data);
+
+            $opinion_id = $this->db->insert_id();
+            $reply_data_recp = array(
+                'recipient_id' => $opinion_doctor,
+                'ura_opinion_id' => $opinion_id);
+            $this->db->insert('uralensis_opinion_recipient', $reply_data_recp);
+
+            $json['type'] = 'success';
+            $json['msg'] = 'Reply Submitted';
+            echo json_encode($json);
+            die;
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Something Wrong';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Change input color in doctor detail page.
+     * Orange, Green, Blue.
+     */
+    public function set_input_change_color() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $record_id = $_POST['record_id'];
+        $user_id = $this->ion_auth->user()->row()->id;
+        $input_key = $_POST['key'];
+        /**
+         * Get the default edit status array
+         */
+        $edit_status_query = $this->db->query("SELECT request.record_edit_status FROM request WHERE request.uralensis_request_id = $record_id")->result();
+        $default_edit_status = unserialize($edit_status_query [0]->record_edit_status);
+        if (!empty($default_edit_status) && array_key_exists($input_key, $default_edit_status)) {
+            $default_edit_status[$input_key] = 2;
+        } else {
+            $default_edit_status[$input_key] = 1;
+        }
+
+        $data = array(
+            'record_edit_status' => serialize($default_edit_status)
+        );
+
+        $this->db->where('uralensis_request_id', $record_id);
+        $this->db->update('request', $data);
+
+        $color_code = 'input-bg-orange';
+        if (!empty($default_edit_status) && $default_edit_status[$input_key] == 1) {
+            $color_code = 'input-bg-green';
+        } elseif ($default_edit_status[$input_key] == 2) {
+            $color_code = 'input-bg-blue';
+        }
+
+        $json['type'] = 'success';
+        $json['color_code'] = $color_code;
+        $json['msg'] = 'Color Code Changed.';
+        echo json_encode($json);
+        die;
+    }
+
+    /**
+     * Search Lab Number Format or Mask
+     */
+    public function search_lab_number_mask() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if (isset($_POST) && !empty($_POST['lab_id'])) {
+            $lab_id = $this->input->post('lab_id');
+            $find_lab_mask = $this->db->query("SELECT lab_names.lab_format_mask FROM lab_names WHERE lab_names.lab_name_id = $lab_id")->result_array();
+
+
+            $lab_mask = '';
+            if (!empty($find_lab_mask[0])) {
+                $lab_mask = $find_lab_mask[0]['lab_format_mask'];
+                if (empty($lab_mask)) {
+                    $json['type'] = 'error';
+                    $json['msg'] = 'Sorry add the lab number format first in general settings.';
+                    echo json_encode($json);
+                    die;
+                } else {
+                    $json['type'] = 'success';
+                    $json['lab_mask'] = $lab_mask;
+                    $json['msg'] = 'Lab Format Found.';
+                    echo json_encode($json);
+                    die;
+                }
+            }
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Something Went Wrong.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Set Microscopic Date
+     * @return html
+     */
+    public function set_microscopic_data() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $json = array();
+        $html = '';
+
+        if (isset($_POST)) {
+            //Prepare return Data
+            foreach ($_POST as $key => $values) {
+                if (is_array($values)) {
+                    $html .= str_replace("_", " ", $key) . ":<br />";
+                    foreach ($values as $data) {
+                        $html .= $data . "<br />";
+                    }
+                } else {
+                    $html .= str_replace("_", " ", $key) . ": " . $values . "<br />";
+                }
+            }
+        }
+
+        $json['type'] = 'success';
+        $json['html_data'] = $html;
+        echo json_encode($json);
+        die;
+    }
+
+    /**
+     * Check user record status
+     * and save in db
+     */
+    public function save_user_view_status() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $json = array();
+        $user_id = $this->ion_auth->user()->row()->id;
+
+        if (isset($_POST['user_status']) && $_POST['user_status'] === 'view' && !empty($_POST['record_id'])) {
+            $record_id = $_POST['record_id'];
+            $history_data = array(
+                'rec_history_user_id' => $user_id,
+                'rec_history_record_id' => $record_id,
+                'rec_history_data' => '',
+                'rec_history_status' => 'view',
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_history', $history_data);
+            $json['msg'] = 'Ajax Aborted!';
+            echo json_encode($json);
+            die;
+        } else {
+            $json['msg'] = 'Still Checking...';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Set Track Record Statuses
+     */
+    public function set_doctor_record_history_track_status() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $json = array();
+        $record_track_data = '';
+        $record_id = $this->input->post('record_id');
+        //Get Lab Name
+        $get_lab_name = $this->db->select('lab_name')->where('uralensis_request_id', $record_id)->get('request')->row_array();
+        if (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'slides_booked_in') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        } elseif (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'released_slides_back_to_lab') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        } elseif (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'received_from_lab') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        } elseif (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'draft_report') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        } elseif (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'fw_request_ss') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        } elseif (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'booked_out_to_lab_fw_completed') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        } elseif (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'mdt') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        } elseif (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'authorised') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        } elseif (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'fw_request_immuno') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        } elseif (!empty($_POST['record_id']) && $_POST['track_status_key'] === 'supplementary') {
+            $record_id = $this->input->post('record_id');
+            $barcode_no = $this->input->post('barcode_no');
+            $status_key = $this->input->post('track_status_key');
+
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+            //Add record in track history table.
+            //Prepare data for insertion
+            $track_data = array(
+                'ura_rec_track_no' => $barcode_no,
+                'ura_rec_track_location' => !empty($get_lab_name['lab_name']) ? $get_lab_name['lab_name'] : '',
+                'ura_rec_track_record_id' => intval($record_id),
+                'ura_rec_track_status' => $status_key,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_data);
+
+            /**
+             * Load Record Track Data
+             */
+            $track_sql = "SELECT * FROM uralensis_record_track_status WHERE uralensis_record_track_status.ura_rec_track_record_id = $record_id";
+            $record_track_query = $this->db->query($track_sql)->result_array();
+
+            /**
+             * Load record track data
+             */
+            if (!empty($record_track_query)) {
+                $record_track_data .= '<hr>';
+                $record_track_data .= '<table class="table">';
+                $record_track_data .= '<tr class="bg-primary">';
+                $record_track_data .= '<th>Track No.</th>';
+                $record_track_data .= '<th>Time/Date</th>';
+                $record_track_data .= '<th>Location</th>';
+                $record_track_data .= '<th>Status</th>';
+                $record_track_data .= '<th>Pathologist</th>';
+                $record_track_data .= '</tr>';
+                foreach ($record_track_query as $data) {
+                    $record_track_data .= '<tr class="bg-info">';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_no'] . '</td>';
+                    $record_track_data .= '<td>' . date('h:i, d/m/Y', $data['timestamp']) . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_location'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_status'] . '</td>';
+                    $record_track_data .= '<td>' . $data['ura_rec_track_pathologist'] . '</td>';
+                    $record_track_data .= '</tr>';
+                }
+                $record_track_data .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['record_track_data'] = $record_track_data;
+            $json['msg'] = 'Data updated successfully.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Get User first and last name
+     * @param type $user_id
+     * @return string
+     */
+    public function get_uralensis_username($user_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        if (!empty($user_id)) {
+
+            $f_name = $this->ion_auth->user($user_id)->row()->first_name;
+            $l_name = $this->ion_auth->user($user_id)->row()->last_name;
+            $username = $f_name . ' ' . $l_name;
+
+            return $username;
+        }
+    }
+
+    /**
+     * Record Tracking Module
+     * 8 Feb 2018
+     */
+    public function record_tracking() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        $doctor_id = $this->ion_auth->user()->row()->id;
+        $doc_permissions = $this->ion_auth->user($doctor_id)->row()->user_doc_rec_perm;
+        $this->load->view('doctor/inc/header');
+        if ($doc_permissions === 'on') {
+            $hospital_users['hos_users'] = $this->Doctor_model->get_hospital_groups();
+            $lab_names['lab_names'] = $this->Doctor_model->get_lab_names();
+            $doc_list['doctor_list'] = $this->Doctor_model->get_doctors();
+            $track_templates['track_templates'] = $this->Doctor_model->get_all_track_record_templates($doctor_id);
+            $track_set_data = array_merge($hospital_users, $lab_names, $doc_list, $track_templates);
+            $this->load->view('doctor/record_tracking/index', $track_set_data);
+        }
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * Load Track New Template
+     * return html
+     */
+    public function load_track_new_template() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $tmpl_edit_data = '';
+        $json = array();
+
+        $hospital_users = $this->Doctor_model->get_hospital_groups();
+        $lab_names = $this->Doctor_model->get_lab_names();
+        $doctor_list = $this->Doctor_model->get_doctors();
+
+        $tmpl_edit_data .='<div class="tg-catagoryhead">';
+        $tmpl_edit_data .='<h3>Track Options Menu</h3>';
+        $tmpl_edit_data .='<a class="tg-btnsave save-track-template" href="javascript:;"><i class="fa fa-save"></i></a>';
+        $tmpl_edit_data .='<a class="tg-btnacollapse collapse_temp_data_btn" href="javascript:;"><i class="fa fa-angle-up"></i></a>';
+        $tmpl_edit_data .='</div>';
+
+        $tmpl_edit_data .='<div class="collapse_temp_data">';
+        $tmpl_edit_data .='<form class="form track_temp_edit_form">';
+        $tmpl_edit_data .= '<div class="col-md-3 show_template_name_input hidden-boxes"><input type="text" name="track_template_name" class="form-control"></div>';
+        $tmpl_edit_data .= '<div class="clearfix"></div>';
+        $tmpl_edit_data .='<div class="tg-topic">';
+        $tmpl_edit_data .='<a href="javascript:;" class="show_clinic_btn">';
+        $tmpl_edit_data .='<div class="tg-catagorytopic tg-clinic">';
+        $tmpl_edit_data .='<span class="tg-checked fa fa-check"></span>';
+        $tmpl_edit_data .='<i class="lnr lnr-apartment"></i>';
+        $tmpl_edit_data .='<div class="tg-catagorycontent">';
+        $tmpl_edit_data .='<h3>Clinic</h3>';
+        $tmpl_edit_data .='<span class="display_selected_option"></span>';
+        $tmpl_edit_data .='</div>';
+        $tmpl_edit_data .='<em>+</em>';
+        $tmpl_edit_data .='</div>';
+        $tmpl_edit_data .='</a>';
+        $tmpl_edit_data .='<div class="show-data-holder" style="background: #1abc9c;">';
+        $tmpl_edit_data .='<div class="show_clinic">';
+        $tmpl_edit_data .='<div class="show_clinic_title">';
+        $tmpl_edit_data .='<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+        $tmpl_edit_data .='<h4><i class="lnr lnr-apartment"></i>Clinic</h4>';
+        $tmpl_edit_data .='</div>';
+        $tmpl_edit_data .='<div class="input-scroll-holder ura-custom-scrollbar">';
+
+        if (!empty($hospital_users)) {
+            foreach ($hospital_users as $users) {
+                $hospital_name = !empty($users->description) ? $users->description : '';
+
+                $tmpl_edit_data .='<div class="input-holder">';
+                $tmpl_edit_data .='<input class="tat hospital_user" data-hospitalname="' . $hospital_name . '" type="radio" id="hospital_' . $users->id . '" name="hospital_user" value="' . $users->id . '">';
+                $tmpl_edit_data .='<label for="hospital_' . $users->id . '">' . $hospital_name . '</label>';
+                $tmpl_edit_data .='</div>';
+            }
+        }
+
+        $tmpl_edit_data .='</div>';
+        $tmpl_edit_data .='</div>';
+        $tmpl_edit_data .='</div>';
+        $tmpl_edit_data .='</div>';
+
+        $tmpl_edit_data .= '<div class="tg-topic">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="show_clinic_users_btn">';
+        $tmpl_edit_data .= '<div class="tg-catagorytopic tg-users">';
+        $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+        $tmpl_edit_data .= '<i class="lnr lnr-users"></i>';
+        $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+        $tmpl_edit_data .= '<h3>Clinic Users</h3>';
+        $tmpl_edit_data .= '<span class="display_selected_option"></span>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<em>+</em>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</a>';
+        $tmpl_edit_data .= '<div class="show-data-holder" style="background: #2ecc71;">';
+        $tmpl_edit_data .= '<div class="show_clinic_users">';
+        $tmpl_edit_data .= '<div class="show_clinic_title">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+        $tmpl_edit_data .= '<h4><i class="lnr lnr-users"></i>Clinic User</h4>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<div class="input-scroll-holder ura-custom-scrollbar">';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .='</div>';
+
+        $tmpl_edit_data .= '<div class="tg-topic">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="show_lab_btn">';
+        $tmpl_edit_data .= '<div class="tg-catagorytopic tg-heartpuls">';
+        $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+        $tmpl_edit_data .= '<i class="lnr lnr-heart-pulse"></i>';
+        $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+        $tmpl_edit_data .= '<h3>Lab</h3>';
+        $tmpl_edit_data .= '<span class="display_selected_option"></span>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<em>+</em>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= ' </a>';
+        $tmpl_edit_data .= '<div class="show-data-holder" style="background: #3498db;">';
+        $tmpl_edit_data .= '<div class="show_labs">';
+        $tmpl_edit_data .= '<div class="show_clinic_title">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+        $tmpl_edit_data .= '<h4><i class="lnr lnr-heart-pulse"></i>Lab</h4>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<div class="input-scroll-holder ura-custom-scrollbar">';
+
+        if (!empty($lab_names)) {
+            foreach ($lab_names as $labs) {
+                $tmpl_edit_data .= '<div class="input-holder">';
+                $tmpl_edit_data .= '<input class="track_lab_name" data-labname="' . $labs->lab_name . '" type="radio" id="lab_' . $labs->lab_name_id . '" name="lab_name" value="' . $labs->lab_name_id . '">';
+                $tmpl_edit_data .= '<label for="lab_' . $labs->lab_name_id . '">' . $labs->lab_name . '</label>';
+                $tmpl_edit_data .= '</div>';
+            }
+        }
+
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+
+
+        $tmpl_edit_data .= '<div class="tg-topic">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="show_pathologists_btn">';
+        $tmpl_edit_data .= '<div class="tg-catagorytopic tg-pathologist">';
+        $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+        $tmpl_edit_data .= '<i class="lnr lnr-heart"></i>';
+        $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+        $tmpl_edit_data .= '<h3>Pathologist</h3>';
+        $tmpl_edit_data .= '<span class="display_selected_option"></span>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<em>+</em>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</a>';
+        $tmpl_edit_data .= '<div class="show-data-holder" style="background: #9b59b6;">';
+        $tmpl_edit_data .= '<div class="show_pathologists">';
+        $tmpl_edit_data .= '<div class="show_clinic_title">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+        $tmpl_edit_data .= '<h4><i class="lnr lnr-heart"></i>Pathologist</h4>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<div class="input-scroll-holder ura-custom-scrollbar">';
+
+        if (!empty($doctor_list)) {
+            foreach ($doctor_list as $doctor) {
+                $tmpl_edit_data .= '<div class="input-holder">';
+                $tmpl_edit_data .= '<input class="pathologist" type="radio" data-pathologist="' . $doctor->first_name . ' ' . $doctor->last_name . '" id="doctor_' . $doctor->id . '" name="pathologist" value="' . $doctor->id . '">';
+                $tmpl_edit_data .= '<label for="doctor_' . $doctor->id . '">' . $doctor->first_name . ' ' . $doctor->last_name . '</label>';
+                $tmpl_edit_data .= '</div>';
+            }
+        }
+
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+
+        $tmpl_edit_data .= '<div class="tg-topic">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="show_report_urgency_btn">';
+        $tmpl_edit_data .= '<div class="tg-catagorytopic tg-urgency">';
+        $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+        $tmpl_edit_data .= '<i class="lnr lnr-clock"></i>';
+        $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+        $tmpl_edit_data .= '<h3>Report Urgency</h3>';
+        $tmpl_edit_data .= '<span class="display_selected_option"></span>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<em>+</em>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</a>';
+        $tmpl_edit_data .= '<div class="show-data-holder" style="background: #e67e22;">';
+        $tmpl_edit_data .= '<div class="show_report_urgency">';
+        $tmpl_edit_data .= '<div class="show_clinic_title">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+        $tmpl_edit_data .= '<h4><i class="lnr lnr-clock"></i>Report Urgency</h4>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<div class="input-scroll-holder">';
+
+        $report_urgeny_data = array(
+            'routine' => 'Routine',
+            '2ww' => '2WW',
+            'urgent' => 'Urgent',
+        );
+        foreach ($report_urgeny_data as $key => $report_urgency) {
+            $tmpl_edit_data .= '<div class="input-holder">';
+            $tmpl_edit_data .= '<input class="report_urgency" data-urgency="' . $report_urgency . '" type="radio" id="report_' . $key . '" name="report_urgency" value="' . $key . '">';
+            $tmpl_edit_data .= '<label for="report_' . $key . '">' . $report_urgency . '</label>';
+            $tmpl_edit_data .= '</div>';
+        }
+
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+
+        $tmpl_edit_data .= '<div class="tg-topic">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="show_specimen_type_btn">';
+        $tmpl_edit_data .= '<div class="tg-catagorytopic tg-specimentype">';
+        $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+        $tmpl_edit_data .= '<i class="lnr lnr-layers"></i>';
+        $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+        $tmpl_edit_data .= '<h3>Specimen Type</h3>';
+        $tmpl_edit_data .= '<span class="display_selected_option"></span>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<em>+</em>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</a>';
+        $tmpl_edit_data .= '<div class="show-data-holder" style="background: #e74c3c;">';
+        $tmpl_edit_data .= '<div class="show_specimen_type">';
+        $tmpl_edit_data .= '<div class="show_clinic_title">';
+        $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+        $tmpl_edit_data .= '<h4><i class="lnr lnr-layers"></i>Specimen Type</h4>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '<div class="input-scroll-holder">';
+
+        $specimen_type_data = array(
+            'gi' => 'GI',
+            'skin' => 'Skin',
+            'other' => 'Other'
+        );
+
+        foreach ($specimen_type_data as $key => $specimen_type) {
+            $tmpl_edit_data .= '<div class="input-holder">';
+            $tmpl_edit_data .= '<input class="specimen_type" data-specimentype="' . $specimen_type . '" type="radio" id="speci_type_' . $key . '" name="specimen_type" value="' . $key . '">';
+            $tmpl_edit_data .= '<label for="speci_type_' . $key . '">' . $specimen_type . '</label>';
+            $tmpl_edit_data .= '</div>';
+        }
+
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</form>';
+        $tmpl_edit_data .= '</div>';
+        $tmpl_edit_data .= '</div>';
+
+        $json['type'] = 'success';
+        $json['tmpl_new_data'] = $tmpl_edit_data;
+        $json['msg'] = 'Template Loaded';
+        echo json_encode($json);
+        die;
+    }
+
+    /**
+     * Search Hospital Group Users
+     */
+    public function search_hospital_group_users() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $encode_data = '';
+        $json = array();
+
+        if (isset($_POST)) {
+            $hospital_id = $this->input->post('hospital_id');
+            $clinic_user_id = $this->input->post('clinic_user_id');
+            $hospital_users = $this->Doctor_model->get_all_hospital_users_by_group($hospital_id);
+
+            $clinic_username = '';
+            if (!empty($clinic_user_id)) {
+                $clinic_username = $this->get_uralensis_username($clinic_user_id);
+            }
+
+            if (!empty($hospital_users)) {
+
+                $encode_data .= '<a href="javascript:;" class="show_clinic_users_btn">';
+                $encode_data .= '<div class="tg-catagorytopic tg-users">';
+                $encode_data .= '<i class="lnr lnr-users"></i>';
+                $encode_data .= '<h3>Select Clinic Users</h3>';
+                $encode_data .= '<span class="display_selected_option">' . $clinic_username . '</span>';
+                $encode_data .= '<em>+</em>';
+                $encode_data .= '</div>';
+                $encode_data .= '</a>';
+                $encode_data .= '<div class="show-data-holder" style="background: #2ecc71;">';
+                $encode_data .= '<div class="show_clinic_users">';
+                $encode_data .= '<div class="show_clinic_title">';
+                $encode_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+                $encode_data .= '<h4><i class="lnr lnr-users"></i>Select Clinic User</h4>';
+                $encode_data .= '</div>';
+                $encode_data .= '<div class="input-scroll-holder ura-custom-scrollbar">';
+                foreach ($hospital_users as $value) {
+                    $checked = '';
+                    if ($value['id'] === $clinic_user_id) {
+                        $checked = 'checked="checked"';
+                    }
+                    $encode_data .= '<div class="input-holder">';
+                    $encode_data .= '<input ' . $checked . ' class="tat" data-clinicuser="' . $value['first_name'] . ' ' . $value['last_name'] . '" type="radio" id="hospital_user_id_' . $value['id'] . '" name="clinic_users" value="' . $value['id'] . '">';
+                    $encode_data .= '<label for="hospital_user_id_' . $value['id'] . '">' . $value['first_name'] . ' ' . $value['last_name'] . '</label>';
+                    $encode_data .= '</div>';
+                }
+                $encode_data .= '</div>';
+                $encode_data .= '</div>';
+                $encode_data .= '</div>';
+                $json['type'] = 'success';
+                $json['encode_data'] = $encode_data;
+                $json['msg'] = 'Users found in this clinic.';
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'No user found in this clinic.';
+                echo json_encode($json);
+                die;
+            }
+        }
+    }
+
+    /**
+     * Save Temp Data
+     * @return string
+     */
+    public function save_new_track_temp_data() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $user_id = $this->ion_auth->user()->row()->id;
+
+        if (!empty($_POST)) {
+            $hospital_user = $this->input->post('hospital_user');
+            $clinic_users = $this->input->post('clinic_users');
+            $lab_name = $this->input->post('lab_name');
+            $pathologist = $this->input->post('pathologist');
+            $report_urgency = $this->input->post('report_urgency');
+            $specimen_type = $this->input->post('specimen_type');
+            $template_name = $this->input->post('track_template_name');
+
+            //Prepare Data for update
+            $temp_data = array(
+                'temp_assignee_id' => $user_id,
+                'temp_hospital_user' => !empty($hospital_user) ? $hospital_user : '',
+                'temp_clinic_user' => !empty($clinic_users) ? $clinic_users : '',
+                'temp_pathologist' => !empty($pathologist) ? $pathologist : '',
+                'temp_lab_name' => !empty($lab_name) ? $lab_name : '',
+                'temp_report_urgency' => !empty($report_urgency) ? $report_urgency : '',
+                'temp_skin_type' => !empty($specimen_type) ? $specimen_type : '',
+                'temp_input_name' => !empty($template_name) ? $template_name : '',
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_template', $temp_data);
+
+            $json['type'] = 'success';
+            $json['msg'] = 'Track Template Inserted successfully.';
+            echo json_encode($json);
+            die;
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Something went wrong.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Get the template button data
+     * retunr tags html
+     */
+    public function get_load_template_data_tags() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $tags_data = '';
+        $tags_edit_btn = '';
+        if (!empty($_POST)) {
+            $hospitalid = $this->input->post('hospitalid');
+            $clinicid = $this->input->post('clinicid');
+            $pathologist = $this->input->post('pathologist');
+            $labname = $this->input->post('labname');
+            $urgency = $this->input->post('urgency');
+            $specimen_type = $this->input->post('speci');
+            $templateid = $this->input->post('templateid');
+
+
+            $get_hospital_name = $this->ion_auth->group($hospitalid)->row()->description;
+            $hospital_name = !empty($get_hospital_name) ? $get_hospital_name : '';
+
+            $clinic_user = $this->ion_auth->user($clinicid)->row()->username;
+            $doctor_name = $this->ion_auth->user($pathologist)->row()->username;
+
+            //Get Lab name
+            $get_lab_name = $this->db->select('lab_name')->from('lab_names')->where('lab_name_id', $labname)->get()->row_array();
+            $tags_data .='<div class="tg-tagsholder">';
+            $tags_data .='<div class="tg-tagsactive"></div>';
+            $tags_data .='<ul class="tg-tagsarea template-tags-container" data-templateid="' . $templateid . '">';
+
+            $tags_data .='<li class="tg-clinic">';
+            $tags_data .='<a class="tg-tag" href="javascript:;"><i class="fa fa-check"></i><span>Clinic: <em>' . $hospital_name . '</em><i>+</i></span></a>';
+            $tags_data .='</li>';
+
+            $tags_data .='<li class="tg-users">';
+            $tags_data .='<a class="tg-tag" href="javascript:;"><i class="fa fa-check"></i><span>Clinic User: <em>' . ucwords($clinic_user) . '</em><i>+</i></span></a>';
+            $tags_data .='</li>';
+
+            $tags_data .='<li class="tg-labs">';
+            $tags_data .='<a class="tg-tag" href="javascript:;"><i class="fa fa-check"></i><span>Lab: <em>' . ucwords($get_lab_name['lab_name']) . '</em><i>+</i></span></a>';
+            $tags_data .='</li>';
+
+            $tags_data .='<li class="tg-pathologist">';
+            $tags_data .='<a class="tg-tag" href="javascript:;"><i class="fa fa-check"></i><span>Pathologist: <em>' . ucwords($doctor_name) . '</em><i>+</i></span></a>';
+            $tags_data .=' </li>';
+
+            $tags_data .='<li class= "tg-urgency">';
+            $tags_data .='<a class="tg-tag" href = "javascript:;"><i class="fa fa-check"></i><span>Urgency: <em>' . ucwords($urgency) . ' </em><i>+</i></span></a>';
+            $tags_data .='</li>';
+
+            $tags_data .='<li class="tg-specimen">';
+            $tags_data .='<a class="tg-tag" href="javascript:;"><i class="fa fa-check"></i><span>Specimen Type: <em>' . ucwords($specimen_type) . ' </em><i>+</i></span></a>';
+            $tags_data .='</li>';
+            $tags_data .='</ul>';
+            $tags_data .='<div class="track_temp_edit_btn"><a class="tg-btntrackoption track_edit_template" href="javascript:;" data-templateid="' . $templateid . '" data-hospitalid="' . $hospitalid . '" data-clinicuserid="' . $clinicid . '" data-pathologist="' . $pathologist . '" data-labname="' . $labname . '" data-urgency="' . $urgency . '" data-specitype="' . $specimen_type . '"><span>Track Options Menu</span><i class="fa fa-pencil"></i></a></div>';
+            $tags_data .='</div>';
+
+            $json['type'] = 'success';
+            $json['tags_data'] = $tags_data;
+            $json['msg'] = 'Template Loaded';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Load Track Edit Template
+     */
+    public function load_track_edit_template_data() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+        $tmpl_edit_data = '';
+        if (!empty($_POST)) {
+            $template_id = $this->input->post('template_id');
+            $hospitalid = $this->input->post('hospital_id');
+            $clinicuserid = $this->input->post('clinic_userid');
+            $pathologist = $this->input->post('pathologist');
+            $labid = $this->input->post('labname');
+            $urgency = $this->input->post('urgency');
+            $specitype = $this->input->post('specitype');
+
+            $hospital_users = $this->Doctor_model->get_hospital_groups();
+            $get_hospital_name = $this->db->select('description')->from('groups')->where('id', $hospitalid)->get()->row_array();
+            $hospital_clinic_users = $this->Doctor_model->get_all_hospital_users_by_group($hospitalid);
+            $lab_names = $this->Doctor_model->get_lab_names();
+            $get_lab_name = $this->db->select('lab_name')->from('lab_names')->where('lab_name_id', $labid)->get()->row_array();
+            $doctor_list = $this->Doctor_model->get_doctors();
+
+            $clinic_username = '';
+            if (!empty($clinicuserid)) {
+                $clinic_username = $this->get_uralensis_username($clinicuserid);
+            }
+
+            $tmpl_edit_data .='<div class="tg-catagoryhead">';
+            $tmpl_edit_data .='<h3>Track Options Menu</h3>';
+            $tmpl_edit_data .='<a class="tg-btnsave update-track-template" href="javascript:;"><i class="fa fa-save"></i></a>';
+            $tmpl_edit_data .='<a class="tg-btnacollapse collapse_temp_data_btn" href="javascript:;"><i class="fa fa-angle-up"></i></a>';
+            $tmpl_edit_data .='</div>';
+            $tmpl_edit_data .='<div class="collapse_temp_data">';
+            $tmpl_edit_data .='<form class="form track_temp_edit_form">';
+            $tmpl_edit_data .='<div class="tg-topic">';
+            $tmpl_edit_data .='<a href="javascript:;" class="show_clinic_btn">';
+            $tmpl_edit_data .='<div class="tg-catagorytopic tg-clinic">';
+            $tmpl_edit_data .='<span class="tg-checked fa fa-check"></span>';
+            $tmpl_edit_data .='<i class="lnr lnr-apartment"></i>';
+            $tmpl_edit_data .='<div class="tg-catagorycontent">';
+            $tmpl_edit_data .='<h3>Clinic</h3>';
+            $tmpl_edit_data .='<span class="display_selected_option">' . $get_hospital_name['description'] . '</span>';
+            $tmpl_edit_data .='</div>';
+            $tmpl_edit_data .='<em>+</em>';
+            $tmpl_edit_data .='</div>';
+            $tmpl_edit_data .='</a>';
+            $tmpl_edit_data .='<div class="show-data-holder" style="background: #1abc9c;">';
+            $tmpl_edit_data .='<div class="show_clinic">';
+            $tmpl_edit_data .='<div class="show_clinic_title">';
+            $tmpl_edit_data .='<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+            $tmpl_edit_data .='<h4><i class="lnr lnr-apartment"></i>Clinic</h4>';
+            $tmpl_edit_data .='</div>';
+            $tmpl_edit_data .='<div class="input-scroll-holder ura-custom-scrollbar">';
+
+            if (!empty($hospital_users)) {
+                foreach ($hospital_users as $users) {
+                    $hospital_name = !empty($users->description) ? $users->description : '';
+                    $checked = '';
+                    if ($hospitalid === $users->id) {
+                        $checked = 'checked';
+                    }
+                    $tmpl_edit_data .='<div class="input-holder">';
+                    $tmpl_edit_data .='<input ' . $checked . ' class="tat hospital_user" data-hospitalname="' . $hospital_name . '" type="radio" id="hospital_' . $users->id . '" name="hospital_user" value="' . $users->id . '">';
+                    $tmpl_edit_data .='<label for="hospital_' . $users->id . '">' . $hospital_name . '</label>';
+                    $tmpl_edit_data .='</div>';
+                }
+            }
+
+            $tmpl_edit_data .='</div>';
+            $tmpl_edit_data .='</div>';
+            $tmpl_edit_data .='</div>';
+            $tmpl_edit_data .='</div>';
+
+            $tmpl_edit_data .= '<div class="tg-topic">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="show_clinic_users_btn">';
+            $tmpl_edit_data .= '<div class="tg-catagorytopic tg-users">';
+            $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+            $tmpl_edit_data .= '<i class="lnr lnr-users"></i>';
+            $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+            $tmpl_edit_data .= '<h3>Clinic Users</h3>';
+            $tmpl_edit_data .= '<span class="display_selected_option">' . $clinic_username . '</span>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<em>+</em>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</a>';
+            $tmpl_edit_data .= '<div class="show-data-holder" style="background: #2ecc71;">';
+            $tmpl_edit_data .= '<div class="show_clinic_users">';
+            $tmpl_edit_data .= '<div class="show_clinic_title">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+            $tmpl_edit_data .= '<h4><i class="lnr lnr-users"></i>Clinic User</h4>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<div class="input-scroll-holder ura-custom-scrollbar">';
+            foreach ($hospital_clinic_users as $value) {
+                $checked = '';
+                if ($value['id'] === $clinicuserid) {
+                    $checked = 'checked="checked"';
+                }
+                $tmpl_edit_data .= '<div class="input-holder">';
+                $tmpl_edit_data .= '<input ' . $checked . ' class="tat" data-clinicuser="' . $value['first_name'] . ' ' . $value['last_name'] . '" type="radio" id="hospital_user_id_' . $value['id'] . '" name="clinic_users" value="' . $value['id'] . '">';
+                $tmpl_edit_data .= '<label for="hospital_user_id_' . $value['id'] . '">' . $value['first_name'] . ' ' . $value['last_name'] . '</label>';
+                $tmpl_edit_data .= '</div>';
+            }
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .='</div>';
+
+            $tmpl_edit_data .= '<div class="tg-topic">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="show_lab_btn">';
+            $tmpl_edit_data .= '<div class="tg-catagorytopic tg-heartpuls">';
+            $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+            $tmpl_edit_data .= '<i class="lnr lnr-heart-pulse"></i>';
+            $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+            $tmpl_edit_data .= '<h3>Lab</h3>';
+            $tmpl_edit_data .= '<span class="display_selected_option">' . $get_lab_name['lab_name'] . '</span>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<em>+</em>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= ' </a>';
+            $tmpl_edit_data .= '<div class="show-data-holder" style="background: #3498db;">';
+            $tmpl_edit_data .= '<div class="show_labs">';
+            $tmpl_edit_data .= '<div class="show_clinic_title">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+            $tmpl_edit_data .= '<h4><i class="lnr lnr-heart-pulse"></i>Lab</h4>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<div class="input-scroll-holder ura-custom-scrollbar">';
+
+            if (!empty($lab_names)) {
+                foreach ($lab_names as $labs) {
+
+                    $checked = '';
+                    if ($labs->lab_name_id === $labid) {
+                        $checked = 'checked';
+                    }
+                    $tmpl_edit_data .= '<div class="input-holder">';
+                    $tmpl_edit_data .= '<input ' . $checked . ' class="track_lab_name" data-labname="' . $labs->lab_name . '" type="radio" id="lab_' . $labs->lab_name_id . '" name="lab_name" value="' . $labs->lab_name_id . '">';
+                    $tmpl_edit_data .= '<label for="lab_' . $labs->lab_name_id . '">' . $labs->lab_name . '</label>';
+                    $tmpl_edit_data .= '</div>';
+                }
+            }
+
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+
+
+            $tmpl_edit_data .= '<div class="tg-topic">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="show_pathologists_btn">';
+            $tmpl_edit_data .= '<div class="tg-catagorytopic tg-pathologist">';
+            $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+            $tmpl_edit_data .= '<i class="lnr lnr-heart"></i>';
+            $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+            $tmpl_edit_data .= '<h3>Pathologist</h3>';
+            $tmpl_edit_data .= '<span class="display_selected_option">' . $this->get_uralensis_username($pathologist) . '</span>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<em>+</em>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</a>';
+            $tmpl_edit_data .= '<div class="show-data-holder" style="background: #9b59b6;">';
+            $tmpl_edit_data .= '<div class="show_pathologists">';
+            $tmpl_edit_data .= '<div class="show_clinic_title">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+            $tmpl_edit_data .= '<h4><i class="lnr lnr-heart"></i>Pathologist</h4>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<div class="input-scroll-holder ura-custom-scrollbar">';
+
+            if (!empty($doctor_list)) {
+                foreach ($doctor_list as $doctor) {
+
+                    $checked = '';
+                    if ($doctor->id === $pathologist) {
+                        $checked = 'checked';
+                    }
+
+                    $tmpl_edit_data .= '<div class="input-holder">';
+                    $tmpl_edit_data .= '<input  ' . $checked . ' class="pathologist" type="radio" data-pathologist="' . $doctor->first_name . ' ' . $doctor->last_name . '" id="doctor_' . $doctor->id . '" name="pathologist" value="' . $doctor->id . '">';
+                    $tmpl_edit_data .= '<label for="doctor_' . $doctor->id . '">' . $doctor->first_name . ' ' . $doctor->last_name . '</label>';
+                    $tmpl_edit_data .= '</div>';
+                }
+            }
+
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+
+            $tmpl_edit_data .= '<div class="tg-topic">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="show_report_urgency_btn">';
+            $tmpl_edit_data .= '<div class="tg-catagorytopic tg-urgency">';
+            $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+            $tmpl_edit_data .= '<i class="lnr lnr-clock"></i>';
+            $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+            $tmpl_edit_data .= '<h3>Report Urgency</h3>';
+            $tmpl_edit_data .= '<span class="display_selected_option">' . ucwords($urgency) . '</span>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<em>+</em>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</a>';
+            $tmpl_edit_data .= '<div class="show-data-holder" style="background: #e67e22;">';
+            $tmpl_edit_data .= '<div class="show_report_urgency">';
+            $tmpl_edit_data .= '<div class="show_clinic_title">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+            $tmpl_edit_data .= '<h4><i class="lnr lnr-clock"></i>Report Urgency</h4>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<div class="input-scroll-holder">';
+
+            $report_urgeny_data = array(
+                'routine' => 'Routine',
+                '2ww' => '2WW',
+                'urgent' => 'Urgent',
+            );
+            foreach ($report_urgeny_data as $key => $report_urgency) {
+
+                $checked = '';
+                if ($key === $urgency) {
+                    $checked = 'checked';
+                }
+
+                $tmpl_edit_data .= '<div class="input-holder">';
+                $tmpl_edit_data .= '<input ' . $checked . ' class="report_urgency" data-urgency="' . $report_urgency . '" type="radio" id="report_' . $key . '" name="report_urgency" value="' . $key . '">';
+                $tmpl_edit_data .= '<label for="report_' . $key . '">' . $report_urgency . '</label>';
+                $tmpl_edit_data .= '</div>';
+            }
+
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+
+            $tmpl_edit_data .= '<div class="tg-topic">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="show_specimen_type_btn">';
+            $tmpl_edit_data .= '<div class="tg-catagorytopic tg-specimentype">';
+            $tmpl_edit_data .= '<span class="tg-checked fa fa-check"></span>';
+            $tmpl_edit_data .= '<i class="lnr lnr-layers"></i>';
+            $tmpl_edit_data .= '<div class="tg-catagorycontent">';
+            $tmpl_edit_data .= '<h3>Specimen Type</h3>';
+            $tmpl_edit_data .= '<span class="display_selected_option">' . ucwords($specitype) . '</span>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<em>+</em>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</a>';
+            $tmpl_edit_data .= '<div class="show-data-holder" style="background: #e74c3c;">';
+            $tmpl_edit_data .= '<div class="show_specimen_type">';
+            $tmpl_edit_data .= '<div class="show_clinic_title">';
+            $tmpl_edit_data .= '<a href="javascript:;" class="lnr lnr-cross close_showpanel"></a>';
+            $tmpl_edit_data .= '<h4><i class="lnr lnr-layers"></i>Specimen Type</h4>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<div class="input-scroll-holder">';
+
+            $specimen_type_data = array(
+                'gi' => 'GI',
+                'skin' => 'Skin',
+                'other' => 'Other'
+            );
+            foreach ($specimen_type_data as $key => $specimen_type) {
+
+                $checked = '';
+                if ($key === $specitype) {
+                    $checked = 'checked';
+                }
+                $tmpl_edit_data .= '<div class="input-holder">';
+                $tmpl_edit_data .= '<input ' . $checked . ' class="specimen_type" data-specimentype="' . $specimen_type . '" type="radio" id="speci_type_' . $key . '" name="specimen_type" value="' . $key . '">';
+                $tmpl_edit_data .= '<label for="speci_type_' . $key . '">' . $specimen_type . '</label>';
+                $tmpl_edit_data .= '</div>';
+            }
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '</div>';
+            $tmpl_edit_data .= '<input class="temp_id" type="hidden" name="template_id" value="">';
+            $tmpl_edit_data .= '</form>';
+            $tmpl_edit_data .= '</div>';
+
+            $tmpl_edit_data .= '</div>';
+
+            $json['type'] = 'success';
+            $json['tmpl_edit_data'] = $tmpl_edit_data;
+            $json['msg'] = 'Template Loaded';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Save Temp Data
+     * @return string
+     */
+    public function update_track_edit_temp_data() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (!empty($_POST)) {
+            $template_id = $this->input->post('template_id');
+            $hospital_user = $this->input->post('hospital_user');
+            $clinic_users = $this->input->post('clinic_users');
+            $lab_name = $this->input->post('lab_name');
+            $pathologist = $this->input->post('pathologist');
+            $report_urgency = $this->input->post('report_urgency');
+            $specimen_type = $this->input->post('specimen_type');
+
+            //Prepare Data for update
+            $temp_data = array(
+                'temp_hospital_user' => !empty($hospital_user) ? $hospital_user : '',
+                'temp_clinic_user' => !empty($clinic_users) ? $clinic_users : '',
+                'temp_pathologist' => !empty($pathologist) ? $pathologist : '',
+                'temp_lab_name' => !empty($lab_name) ? $lab_name : '',
+                'temp_report_urgency' => !empty($report_urgency) ? $report_urgency : '',
+                'temp_skin_type' => !empty($specimen_type) ? $specimen_type : ''
+            );
+            $this->db->where('ura_rec_temp_id', $template_id);
+            $this->db->update('uralensis_record_track_template', $temp_data);
+
+            $json['type'] = 'success';
+            $json['msg'] = 'Track Template updated successfully.';
+            echo json_encode($json);
+            die;
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'Something went wrong.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Search record based on barcode scanner
+     * 12 jan 2017
+     * @return {html}
+     */
+    public function search_and_add_barcode_record() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $search_term = $this->input->post('barcode');
+        $json = array();
+        $encode = '';
+        if (isset($_POST) && $_POST['search_type'] === 'only_search') {
+
+            $query = $this->db->where('ura_barcode_no', $search_term)->get('request')->row_array();
+
+            //Get the doctor id
+            $doctor_id = $this->db->select('user_id')->where('request_id', $query['uralensis_request_id'])->get('request_assignee')->row_array()['user_id'];
+
+            if (!empty($query)) {
+                $encode .= '<table class="table track_search_table table-bordered">';
+                $encode .= '<tr class="bg-primary">';
+                $encode .= '<th>UL No.</th>';
+                $encode .= '<th>Track No.</th>';
+                $encode .= '<th>Client</th>';
+                $encode .= '<th>First Name</th>';
+                $encode .= '<th>Surname</th>';
+                $encode .= '<th>DOB</th>';
+                $encode .= '<th>NHS No.</th>';
+                $encode .= '<th>Lab No.</th>';
+                $encode .= '<th>Type</th>';
+                $encode .= '<th>Release Date</th>';
+                $encode .= '<th>Statuses</th>';
+                $encode .= '<th>Flag</th>';
+                $encode .= '<th><img src="' . base_url('assets/img/comment-bubble-white.png') . '"></th>';
+                $encode .= '<th><img src="' . base_url('assets/img/docs-white.png') . '"></th>';
+                $encode .= '<th>TAT</th>';
+                $encode .= '<th colspan="2">Actions</th>';
+                $encode .= '</tr>';
+                $encode .= '<tr>';
+                $encode .= '<td>' . $query['serial_number'] . '</td>';
+                $encode .= '<td>' . $query['ura_barcode_no'] . '</td>';
+                $f_initial = '';
+                $l_initial = '';
+                if (!empty($this->ion_auth->group($query['hospital_group_id'])->row()->first_initial)) {
+                    $f_initial = $this->ion_auth->group($query['hospital_group_id'])->row()->first_initial;
+                }
+                if (!empty($this->ion_auth->group($query['hospital_group_id'])->row()->last_initial)) {
+                    $l_initial = $this->ion_auth->group($query['hospital_group_id'])->row()->last_initial;
+                }
+                $encode .= '<td><a class="hospital_initials" data-toggle="tooltip" data-placement="top" title="' . $this->ion_auth->group($query['hospital_group_id'])->row()->description . '" href="javascript:;" >' . $f_initial . ' ' . $l_initial . '</a></td>';
+                $encode .= '<td>' . $query['f_name'] . '</td>';
+                $encode .= '<td>' . $query['sur_name'] . '</td>';
+                $dob = '';
+                if (!empty($query['dob'])) {
+                    $dob = date('d-m-Y', strtotime($query['dob']));
+                }
+                $encode .= '<td>' . $dob . '</td>';
+                $encode .= '<td>' . $query['nhs_number'] . '</td>';
+                $encode .= '<td><a target="_blank" href="' . site_url() . '/doctor/doctor_record_detail/' . $query['uralensis_request_id'] . '">' . $query['lab_number'] . '</a></td>';
+                $encode .= '<td>' . ucwords(substr($query['report_urgency'], 0, 1)) . '</td>';
+                $publish_date = '';
+                if (!empty($query['publish_datetime'])) {
+                    $publish_date = date('d-m-Y', strtotime($query['publish_datetime']));
+                }
+                $encode .= '<td>' . $publish_date . '</td>';
+                $encode .= '<td class="dropdown tg-userdropdown tg-liststatuses">';
+                $encode .= '<a href="javascript:;" data-toggle="dropdown" aria-expanded="true">' . $this->get_track_template_statuses($query['uralensis_request_id'], 'recent')['ura_rec_track_status'] . '</a>';
+                $encode .= '<ul class="dropdown-menu tg-themedropdownmenu custom-list-scroll ura-custom-scrollbar" aria-labelledby="tg-adminnav">';
+                $list_statuses = $this->get_track_template_statuses($query['uralensis_request_id'], 'all');
+                if (!empty($list_statuses)) {
+                    foreach ($list_statuses as $statuses) {
+                        $encode .= '<li>';
+                        $encode .= '<a href="javascript:;">';
+                        $encode .= '<span>' . $statuses['ura_rec_track_status'] . '</span>';
+                        $encode .= '</a>';
+                        $encode .= '</li>';
+                    }
+                }
+                $encode .= '</ul>';
+                $encode .= '</td>';
+                $encode .= '<td class="flag_column">';
+                $encode .= '<div class="hover_flags">';
+                $encode .= '<div class="flag_images">';
+                if ($query['flag_status'] === 'flag_red') {
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as urgent." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_red.png') . '">';
+                } elseif ($query['flag_status'] === 'flag_yellow') {
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for typing." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_yellow.png') . '">';
+                } elseif ($query['flag_status'] === 'flag_blue') {
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for Pre-Authorization." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_blue.png') . '">';
+                } elseif ($query['flag_status'] === 'flag_black') {
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as further work." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_black.png') . '">';
+                } elseif ($query['flag_status'] === 'flag_gray') {
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as awaiting reviews." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_gray.png') . '">';
+                } else {
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_green.png') . '">';
+                }
+
+                $encode .= '</div>';
+                $encode .= '<ul class="report_flags list-unstyled list-inline" style="display:none;">';
+
+                $active = '';
+                if ($query['flag_status'] === 'flag_green') {
+                    $active = 'flag_active';
+                }
+
+                $encode .= '<li class="' . $active . '">';
+                $encode .= '<a href="javascript:;" data-flag="flag_green" data-serial="' . $query['serial_number'] . '" data-recordid="' . $query['uralensis_request_id'] . '" class="flag_change">';
+                $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." src="' . base_url('assets/img/flag_green.png') . '">';
+                $encode .= '</a>';
+                $encode .= '</li>';
+
+                $active = '';
+                if ($query['flag_status'] === 'flag_red') {
+                    $active = 'flag_active';
+                }
+
+                $encode .= '<li class="' . $active . '">';
+                $encode .= '<a href="javascript:;" data-flag="flag_red" data-serial="' . $query['serial_number'] . '" data-recordid="' . $query['uralensis_request_id'] . '" class="flag_change">';
+                $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as urgent." src="' . base_url('assets/img/flag_red.png') . '">';
+                $encode .= '</a>';
+                $encode .= '</li>';
+
+                $active = '';
+                if ($query['flag_status'] === 'flag_yellow') {
+                    $active = 'flag_active';
+                }
+
+                $encode .= '<li class="' . $active . '">';
+                $encode .= '<a href="javascript:;" data-flag="flag_yellow" data-serial="' . $query['serial_number'] . '" data-recordid="' . $query['uralensis_request_id'] . '" class="flag_change">';
+                $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for typing." src="' . base_url('assets/img/flag_yellow.png') . '">';
+                $encode .= '</a>';
+                $encode .= '</li>';
+
+                $active = '';
+                if ($query['flag_status'] === 'flag_blue') {
+                    $active = 'flag_active';
+                }
+
+                $encode .= '<li class="' . $active . '">';
+                $encode .= '<a href="javascript:;" data-flag="flag_blue" data-serial="' . $query['serial_number'] . '" data-recordid="' . $query['uralensis_request_id'] . '" class="flag_change">';
+                $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for pre authorization." src="' . base_url('assets/img/flag_blue.png') . '">';
+                $encode .= '</a>';
+                $encode .= '</li>';
+
+                $active = '';
+                if ($query['flag_status'] === 'flag_black') {
+                    $active = 'flag_active';
+                }
+
+                $encode .= '<li class="' . $active . '">';
+                $encode .= '<a href="javascript:;" data-flag="flag_black" data-serial="' . $query['serial_number'] . '" data-recordid="' . $query['uralensis_request_id'] . '" class="flag_change">';
+                $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked further work." src="' . base_url('assets/img/flag_black.png') . '">';
+                $encode .= '</a>';
+                $encode .= '</li>';
+
+                $active = '';
+                if ($query['flag_status'] === 'flag_gray') {
+                    $active = 'flag_active';
+                }
+
+                $encode .= '<li class="' . $active . '">';
+                $encode .= '<a href="javascript:;" data-flag="flag_gray" data-serial="' . $query['serial_number'] . '" data-recordid="' . $query['uralensis_request_id'] . '" class="flag_change">';
+                $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked awaiting reviews." src="' . base_url('assets/img/flag_gray.png') . '">';
+                $encode .= '</a>';
+                $encode .= '</li>';
+                $encode .= '</ul>';
+                $encode .= '</div>';
+                $encode .= '</td>';
+                $encode .= '<td>';
+                $encode .= '<a class="custom_badge_track" data-toggle="tooltip" data-placement="top" title="" href="javascript:;" data-original-title="View your record comments or add comments.">';
+                $encode .= '<img src="' . base_url('assets/img/comment-bubble.png') . '">&nbsp;';
+                $encode .= '<span class="badge bg-danger">0</span>';
+                $encode .= '</a>';
+                $encode .= '</td>';
+                $count_docs_result = $this->Doctor_model->count_documents($query['uralensis_request_id'], $doctor_id);
+                $encode .= '<td>';
+                $encode .= '<a class="custom_badge_track" data-toggle="tooltip" data-placement="top" title="" data-original-title="View your record comments or add comments.">';
+                $encode .= '<img src="' . base_url('assets/img/docs-black.png') . '">&nbsp;';
+                $encode .= '<span class="badge bg-danger">' . $count_docs_result . '</span>';
+                $encode .= '</a>';
+                $encode .= '</td>';
+                $encode .= '<td>';
+                $encode .= '<a class="custom_badge_tat">';
+
+                $now = time(); // or your date as well
+                $date_taken = !empty($query['date_taken']) ? $query['date_taken'] : '';
+                $request_date = !empty($query['request_datetime']) ? $query['request_datetime'] : '';
+                $tat_date = '';
+
+                if (!empty($date_taken)) {
+                    $tat_date = $date_taken;
+                } else {
+                    $tat_date = $request_date;
+                }
+
+                $compare_date = strtotime("$tat_date");
+                $datediff = $now - $compare_date;
+                $record_old_count = floor($datediff / (60 * 60 * 24));
+
+                $badge = '';
+                if ($record_old_count <= 10) {
+                    $badge = 'bg-success';
+                } elseif ($record_old_count > 10 && $record_old_count <= 20) {
+                    $badge = 'bg-warning';
+                } else {
+                    $badge = 'bg-danger';
+                }
+
+                $encode .= '<span class="badge ' . $badge . '">' . $record_old_count . '</span>';
+                $encode .= '</a>';
+                $encode .= '</td>';
+                $encode .= '<td><a href="' . base_url('index.php/doctor/doctor_record_detail/' . $query['uralensis_request_id']) . '"><img src="' . base_url('assets/img/edit.png') . '"></a></td>';
+                $encode .= '<td class="dropdown tg-userdropdown tg-menu-dropdown">';
+                $encode .= '<a href="javascript:;" data-toggle="dropdown" aria-expanded="true"><span class="lnr lnr-menu"></span></a>';
+                $encode .= '<ul class="dropdown-menu tg-themedropdownmenu" aria-labelledby="tg-adminnav">';
+                $encode .= '<li>';
+                $encode .= '<a href="javascript:;"><i class="lnr lnr-trash"></i><em>Delete</em></a>';
+                $encode .= '</li>';
+                $encode .= '</ul>';
+                $encode .= '</td>';
+                $encode .= '</tr>';
+                $encode .= '</table>';
+
+                $json['type'] = 'success';
+                $json['encode_data'] = $encode;
+                $json['msg'] = 'Record found.';
+                echo json_encode($json);
+                die;
+            } else {
+                $json['type'] = 'error';
+                $json['msg'] = 'No record found against this tracking number.';
+                echo json_encode($json);
+                die;
+            }
+        } elseif ($_POST['search_type'] === 'add_record') {
+
+            $encode = '';
+            $encode_status = '';
+
+            //Get the all post data
+            $template_id = $this->input->post('template_id');
+            $status_code = $this->input->post('status_code');
+
+            //Create template id and status combine key.
+            $batch_session_key = $template_id . '-' . str_replace(' ', '', strtolower($status_code));
+
+            $batch_array = array(
+                $search_term => $search_term
+            );
+
+            //Prepare Data for insertion
+            $batch_data = array(
+                'template_id' => $template_id,
+                'status_code' => $status_code,
+                'session_batch_key' => $batch_session_key,
+                'session_batch_data' => serialize($batch_array),
+                'timestamp' => time()
+            );
+
+            //Check first if data already exists.
+            $check_batch_record = $this->db->where('session_batch_key', $batch_session_key)->get('uralensis_session_record_batch')->row_array();
+            //Unseriliaze the data first
+            $get_batch_data = unserialize($check_batch_record['session_batch_data']);
+            if (empty($check_batch_record)) {
+                $this->db->insert('uralensis_session_record_batch', $batch_data);
+            } elseif (!empty($check_batch_record) && array_key_exists($search_term, $get_batch_data)) {
+                return;
+            } else {
+                $update_array = array(
+                    $search_term => $search_term
+                );
+                $final_data = array_merge($get_batch_data, $update_array);
+
+                $update_batch_data = array(
+                    'session_batch_data' => serialize($final_data)
+                );
+
+                $this->db->where('session_batch_key', $batch_session_key);
+                $this->db->update('uralensis_session_record_batch', $update_batch_data);
+            }
+
+            //Check if record already exist in 
+            //the system then show the error
+
+            $check_record_vd_barcode = $this->db->where('ura_barcode_no', $search_term)->get('request')->row_array();
+            if (!empty($check_record_vd_barcode['ura_barcode_no'])) {
+                //Check if record status is already added or same
+                $check_record_status = $this->db->where('ura_rec_track_status', $status_code)->where('ura_rec_track_no', $check_record_vd_barcode['ura_barcode_no'])->get('uralensis_record_track_status')->row_array();
+
+                if (!empty($check_record_status['ura_rec_track_status']) && $check_record_status['ura_rec_track_status'] === $status_code) {
+                    $json['type'] = 'update_statuses';
+                    $json['msg'] = 'Record already existed with same track status.';
+                    $json['status_msg'] = 'Record found: Track Status - ' . $status_code . '.';
+                    echo json_encode($json);
+                    die;
+                } else {
+                    //Now update the status if status not found in the table
+                    //Gather information from other table in order
+                    //to insert the data in status table.
+                    $get_request_data = $this->db->select('uralensis_request_id, lab_name')->where('ura_barcode_no', $search_term)->get('request')->row_array();
+
+                    $record_track_id = '';
+                    $record_track_lab = '';
+                    if (!empty($get_request_data)) {
+                        $record_track_id = $get_request_data['uralensis_request_id'];
+                        $record_track_lab = $get_request_data['lab_name'];
+                    }
+
+                    $check_record_assign_status = $this->db->select('user_id')->where('request_id', $record_track_id)->get('request_assignee')->row_array();
+                    if (empty($check_record_assign_status)) {
+                        $pathologist_status = 'Not Assigned';
+                    } else {
+                        $pathologist_name = $this->get_uralensis_username($check_record_assign_status['user_id']);
+                        $pathologist_status = $pathologist_name;
+                    }
+
+                    //Prepare data for track status insertion.
+                    $track_status_data = array(
+                        'ura_rec_track_no' => $search_term,
+                        'ura_rec_track_location' => $record_track_lab,
+                        'ura_rec_track_record_id' => intval($record_track_id),
+                        'ura_rec_track_status' => $status_code,
+                        'ura_rec_track_pathologist' => $pathologist_status,
+                        'timestamp' => time()
+                    );
+                    $this->db->insert('uralensis_record_track_status', $track_status_data);
+
+                    $encode_status .='<a href="javascript:;" data-toggle="dropdown" aria-expanded="true">' . $this->Doctor_model->get_track_template_statuses($record_track_id, 'recent')['ura_rec_track_status'] . '</a>';
+                    $encode_status .= '<ul class="dropdown-menu tg-themedropdownmenu custom-list-scroll ura-custom-scrollbar" aria-labelledby="tg-adminnav">';
+
+                    $list_statuses = $this->Doctor_model->get_track_template_statuses($record_track_id, 'all');
+                    if (!empty($list_statuses)) {
+                        foreach ($list_statuses as $statuses) {
+                            $encode_status .= '<li>';
+                            $encode_status .= '<a href="javascript:;">';
+                            $encode_status .= '<span>' . $statuses['ura_rec_track_status'] . '</span>';
+                            $encode_status .= '</a>';
+                            $encode_status .= '</li>';
+                        }
+                    }
+
+                    $encode_status .='</ul>';
+
+                    $json['type'] = 'update_statuses';
+                    $json['msg'] = 'Record already existed and track status updated.';
+                    $json['status_msg'] = 'Record found: Track Status - ' . $status_code . '.';
+                    $json['encode_status'] = $encode_status;
+                    echo json_encode($json);
+                    die;
+                }
+            }
+
+            //Get the data from template track table
+            //and get all necessary field for adding record.
+
+            $template_data = $this->db->where('ura_rec_temp_id', $template_id)->get('uralensis_record_track_template')->row_array();
+
+            $hospital_id = '';
+            $clinic_user_id = '';
+            $pathologist_id = '';
+            $lab_id = '';
+            $urgency = '';
+            $speci_type = '';
+
+            if (!empty($template_data)) {
+                $hospital_id = $template_data['temp_hospital_user'];
+                $clinic_user_id = $template_data['temp_clinic_user'];
+                $pathologist_id = $template_data['temp_pathologist'];
+                $lab_id = $template_data['temp_lab_name'];
+                $urgency = $template_data['temp_report_urgency'];
+                $speci_type = $template_data['temp_skin_type'];
+            }
+
+            $user_id = $this->ion_auth->user()->row()->id;
+
+            $get_lab_name = $this->db->select('lab_name')->where('lab_name_id', $lab_id)->get('lab_names')->row_array();
+
+            $lab_name = '';
+            if (!empty($get_lab_name)) {
+                $lab_name = $get_lab_name['lab_name'];
+            }
+
+            $get_serial_number = $this->db->query("SELECT * FROM request ORDER BY uralensis_request_id DESC LIMIT 1")->row_array();
+            if ($get_serial_number == '') {
+                $req_id_before_insert = 1;
+            } else {
+                $req_id_before_insert = $get_serial_number['uralensis_request_id'];
+            }
+            $serial_query = $this->db->query("SELECT serial_number FROM request WHERE uralensis_request_id = $req_id_before_insert");
+
+            if ($serial_query->num_rows() > 0) {
+                $row = $serial_query->row();
+                $last_inserted_serial_number = $row->serial_number;
+                $keyParts = explode('-', $last_inserted_serial_number);
+                if ($keyParts[1] == date('y')) {
+                    $key = $keyParts[0] . "-" . $keyParts[1] . "-" . ($keyParts[2] + 1);
+                } else {
+                    $key = $keyParts[0] . "-" . date("y") . "-1";
+                }
+            } elseif ($serial_query->num_rows() < 0) {
+                $key = 'UL-' . date('y') . '-1';
+            } else {
+                $key = 'UL-' . date('y') . '-1';
+            }
+
+            $record_edit_status = array(
+                'patient_initial' => 'no',
+                'f_name' => 'no',
+                'sur_name' => 'no',
+                'emis_number' => 'no',
+                'lab_number' => 'no',
+                'dob' => 'no',
+                'date_received_bylab' => 'no',
+                'date_sent_touralensis' => 'no',
+                'rec_by_doc_date' => 'no',
+                'clrk' => 'no',
+                'dermatological_surgeon' => 'no',
+                'pci_number' => 'no',
+                'nhs_number' => 'no',
+                'lab_name' => 'no',
+                'gender' => 'no',
+                'date_taken' => 'no',
+                'report_urgency' => 'no',
+                'cases_category' => 'no'
+            );
+
+            $request = array(
+                'serial_number' => $key,
+                'ura_barcode_no' => $search_term,
+                'hospital_group_id' => $hospital_id,
+                'report_urgency' => !empty($urgency) ? $urgency : '',
+                'lab_name' => !empty($lab_name) ? $lab_name : '',
+                'status' => intval(0),
+                'request_code_status' => 'new',
+                'record_edit_status' => serialize($record_edit_status),
+                'request_add_user' => $user_id,
+                'request_add_user_timestamp' => time()
+            );
+
+            $this->Doctor_model->institute_insert($request);
+
+            //Fetch the record last inserted id.
+            $record_last_id = $this->db->insert_id();
+
+            $specimen = array(
+                'request_id' => $record_last_id,
+                'specimen_site' => '',
+                'specimen_procedure' => '',
+                'specimen_type' => $speci_type,
+                'specimen_block' => '',
+                'specimen_slides' => '',
+                'specimen_block_type' => '',
+                'specimen_macroscopic_description' => '',
+                'specimen_diagnosis_description' => '',
+                'specimen_cancer_register' => '',
+                'specimen_rcpath_code' => ''
+            );
+
+            $this->db->insert('specimen', $specimen);
+            $specimen_id = $this->db->insert_id();
+            $data = array('rs_request_id' => $record_last_id, 'rs_specimen_id' => $specimen_id);
+            $this->db->insert('request_specimen', $data);
+
+
+            //Set Session and save record ids array in session.
+            $record_session_val = $this->session->userdata('record_ids', $record_last_id);
+            $record_session_val[] = $record_last_id;
+            $this->session->set_userdata('record_ids', $record_session_val);
+            $session_record_data = $this->session->userdata('record_ids');
+
+            //Add the entry in user request table.
+            $user_req_data = array(
+                'request_id' => $record_last_id,
+                'users_id' => $clinic_user_id,
+                'group_id' => $hospital_id
+            );
+
+            $this->db->insert("users_request", $user_req_data);
+
+            $request_assign = array(
+                'request_id' => $record_last_id,
+                'user_id' => $pathologist_id,
+            );
+
+            $this->db->insert("request_assignee", $request_assign);
+
+            $assign_request_args = array(
+                'assign_status' => intval(1),
+                'report_status' => intval(1),
+                'request_code_status' => 'assign_doctor',
+                'request_assign_status' => intval(1)
+            );
+
+            $this->db->where('uralensis_request_id', $record_last_id);
+            $this->db->update("request", $assign_request_args);
+
+            /**
+             * Save bookin from clinic status
+             */
+            $check_assign_stat = $this->db->select('user_id')->where('request_id', $record_last_id)->get('request_assignee')->row_array();
+            if (empty($check_assign_stat)) {
+                $pathologist_status = 'Not Assigned';
+            } else {
+                $pathologist_name = $this->get_uralensis_username($check_assign_stat['user_id']);
+                $pathologist_status = $pathologist_name;
+            }
+
+            $track_status_data = array(
+                'ura_rec_track_no' => $search_term,
+                'ura_rec_track_location' => $lab_name,
+                'ura_rec_track_record_id' => intval($record_last_id),
+                'ura_rec_track_status' => $status_code,
+                'ura_rec_track_pathologist' => $pathologist_status,
+                'timestamp' => time()
+            );
+            $this->db->insert('uralensis_record_track_status', $track_status_data);
+
+
+            $query = $this->db->where('ura_barcode_no', $search_term)->get('request')->row_array();
+
+            //Get the doctor id
+            $doctor_id = $this->db->select('user_id')->where('request_id', $query['uralensis_request_id'])->get('request_assignee')->row_array()['user_id'];
+
+            //Check if all session record exists in actually database.
+            if (!empty($session_record_data)) {
+                $check_record = array();
+                //$record_data = array();
+                foreach ($session_record_data as $ids) {
+
+                    if (!empty($ids)) {
+                        $check_record[] = $this->db->where('uralensis_request_id', $ids)->get('request')->row_array();
+                        $record_data = array_filter($check_record);
+                    }
+                }
+            }
+
+            //Set session for final records and save in session
+            //Get all records ids from record_data
+            if (!empty($record_data)) {
+                $record_ids_data = array();
+                foreach ($record_data as $recordids) {
+                    $record_ids_data[] = $recordids['uralensis_request_id'];
+                }
+            }
+            $this->session->set_userdata('session_records', $record_ids_data);
+
+            if (!empty($record_data)) {
+                $encode .= '<a target="_blank" href="' . base_url('index.php/doctor/print_session_records') . '">Print Records</a>';
+                $encode .= '<table class="table track_search_table">';
+                $encode .= '<tr class="bg-primary">';
+                $encode .= '<th>UL No.</th>';
+                $encode .= '<th>Track No.</th>';
+                $encode .= '<th>Client</th>';
+                $encode .= '<th>First Name</th>';
+                $encode .= '<th>Surname</th>';
+                $encode .= '<th>DOB</th>';
+                $encode .= '<th>NHS No.</th>';
+                $encode .= '<th>Lab No.</th>';
+                $encode .= '<th>Type</th>';
+                $encode .= '<th>Release Date</th>';
+                $encode .= '<th>Statuses</th>';
+                $encode .= '<th>Flag</th>';
+                $encode .= '<th><img src="' . base_url('assets/img/comment-bubble-white.png') . '"></th>';
+                $encode .= '<th><img src="' . base_url('assets/img/docs-white.png') . '"></th>';
+                $encode .= '<th>TAT</th>';
+                $encode .= '<th colspan="2">Actions</th>';
+                $encode .= '</tr>';
+
+                foreach ($record_data as $row_data) {
+
+                    $encode .= '<tr class="track_session_row" data-trackno="' . $row_data['ura_barcode_no'] . '">';
+                    $encode .= '<td>' . $row_data['serial_number'] . '</td>';
+                    $encode .= '<td>' . $row_data['ura_barcode_no'] . '</td>';
+                    $f_initial = '';
+                    $l_initial = '';
+                    if (!empty($this->ion_auth->group($row_data['hospital_group_id'])->row()->first_initial)) {
+                        $f_initial = $this->ion_auth->group($row_data['hospital_group_id'])->row()->first_initial;
+                    }
+                    if (!empty($this->ion_auth->group($row_data['hospital_group_id'])->row()->last_initial)) {
+                        $l_initial = $this->ion_auth->group($row_data['hospital_group_id'])->row()->last_initial;
+                    }
+                    $encode .= '<td><a class="hospital_initials" data-toggle="tooltip" data-placement="top" title="' . $this->ion_auth->group($row_data['hospital_group_id'])->row()->description . '" href="javascript:;" >' . $f_initial . ' ' . $l_initial . '</a></td>';
+                    $encode .= '<td>' . $row_data['f_name'] . '</td>';
+                    $encode .= '<td>' . $row_data['sur_name'] . '</td>';
+                    $dob = '';
+                    if (!empty($row_data['dob'])) {
+                        $dob = date('d-m-Y', strtotime($row_data['dob']));
+                    }
+                    $encode .= '<td>' . $dob . '</td>';
+                    $encode .= '<td>' . $row_data['nhs_number'] . '</td>';
+                    $encode .= '<td><a target="_blank" href="' . site_url() . '/doctor/doctor_record_detail/' . $row_data['uralensis_request_id'] . '">' . $row_data['lab_number'] . '</a></td>';
+                    $encode .= '<td>' . ucwords(substr($row_data['report_urgency'], 0, 1)) . '</td>';
+                    $publish_date = '';
+                    if (!empty($row_data['publish_datetime'])) {
+                        $publish_date = date('d-m-Y', strtotime($row_data['publish_datetime']));
+                    }
+                    $encode .= '<td>' . $publish_date . '</td>';
+                    $encode .= '<td class="dropdown tg-userdropdown tg-liststatuses">';
+                    $encode .= '<a href="javascript:;" data-toggle="dropdown" aria-expanded="true">' . $this->get_track_template_statuses($row_data['uralensis_request_id'], 'recent')['ura_rec_track_status'] . '</a>';
+                    $encode .= '<ul class="dropdown-menu tg-themedropdownmenu custom-list-scroll ura-custom-scrollbar" aria-labelledby="tg-adminnav">';
+                    $list_statuses = $this->get_track_template_statuses($row_data['uralensis_request_id'], 'all');
+                    if (!empty($list_statuses)) {
+                        foreach ($list_statuses as $statuses) {
+                            $encode .= '<li>';
+                            $encode .= '<a href="javascript:;">';
+                            $encode .= '<span>' . $statuses['ura_rec_track_status'] . '</span>';
+                            $encode .= '</a>';
+                            $encode .= '</li>';
+                        }
+                    }
+                    $encode .= '</ul>';
+                    $encode .= '</td>';
+                    $encode .= '<td class="flag_column">';
+                    $encode .= '<div class="hover_flags">';
+                    $encode .= '<div class="flag_images">';
+                    if ($row_data['flag_status'] === 'flag_red') {
+                        $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as urgent." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_red.png') . '">';
+                    } elseif ($row_data['flag_status'] === 'flag_yellow') {
+                        $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for typing." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_yellow.png') . '">';
+                    } elseif ($row_data['flag_status'] === 'flag_blue') {
+                        $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for Pre-Authorization." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_blue.png') . '">';
+                    } elseif ($row_data['flag_status'] === 'flag_black') {
+                        $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as further work." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_black.png') . '">';
+                    } elseif ($row_data['flag_status'] === 'flag_gray') {
+                        $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as awaiting reviews." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_gray.png') . '">';
+                    } else {
+                        $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_green.png') . '">';
+                    }
+
+                    $encode .= '</div>';
+                    $encode .= '<ul class="report_flags list-unstyled list-inline" style="display:none;">';
+
+                    $active = '';
+                    if ($row_data['flag_status'] === 'flag_green') {
+                        $active = 'flag_active';
+                    }
+
+                    $encode .= '<li class="' . $active . '">';
+                    $encode .= '<a href="javascript:;" data-flag="flag_green" data-serial="' . $row_data['serial_number'] . '" data-recordid="' . $row_data['uralensis_request_id'] . '" class="flag_change">';
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." src="' . base_url('assets/img/flag_green.png') . '">';
+                    $encode .= '</a>';
+                    $encode .= '</li>';
+
+                    $active = '';
+                    if ($row_data['flag_status'] === 'flag_red') {
+                        $active = 'flag_active';
+                    }
+
+                    $encode .= '<li class="' . $active . '">';
+                    $encode .= '<a href="javascript:;" data-flag="flag_red" data-serial="' . $row_data['serial_number'] . '" data-recordid="' . $row_data['uralensis_request_id'] . '" class="flag_change">';
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as urgent." src="' . base_url('assets/img/flag_red.png') . '">';
+                    $encode .= '</a>';
+                    $encode .= '</li>';
+
+                    $active = '';
+                    if ($row_data['flag_status'] === 'flag_yellow') {
+                        $active = 'flag_active';
+                    }
+
+                    $encode .= '<li class="' . $active . '">';
+                    $encode .= '<a href="javascript:;" data-flag="flag_yellow" data-serial="' . $row_data['serial_number'] . '" data-recordid="' . $row_data['uralensis_request_id'] . '" class="flag_change">';
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for typing." src="' . base_url('assets/img/flag_yellow.png') . '">';
+                    $encode .= '</a>';
+                    $encode .= '</li>';
+
+                    $active = '';
+                    if ($row_data['flag_status'] === 'flag_blue') {
+                        $active = 'flag_active';
+                    }
+
+                    $encode .= '<li class="' . $active . '">';
+                    $encode .= '<a href="javascript:;" data-flag="flag_blue" data-serial="' . $row_data['serial_number'] . '" data-recordid="' . $row_data['uralensis_request_id'] . '" class="flag_change">';
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for pre authorization." src="' . base_url('assets/img/flag_blue.png') . '">';
+                    $encode .= '</a>';
+                    $encode .= '</li>';
+
+                    $active = '';
+                    if ($row_data['flag_status'] === 'flag_black') {
+                        $active = 'flag_active';
+                    }
+
+                    $encode .= '<li class="' . $active . '">';
+                    $encode .= '<a href="javascript:;" data-flag="flag_black" data-serial="' . $row_data['serial_number'] . '" data-recordid="' . $row_data['uralensis_request_id'] . '" class="flag_change">';
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked further work." src="' . base_url('assets/img/flag_black.png') . '">';
+                    $encode .= '</a>';
+                    $encode .= '</li>';
+
+                    $active = '';
+                    if ($row_data['flag_status'] === 'flag_gray') {
+                        $active = 'flag_active';
+                    }
+
+                    $encode .= '<li class="' . $active . '">';
+                    $encode .= '<a href="javascript:;" data-flag="flag_gray" data-serial="' . $row_data['serial_number'] . '" data-recordid="' . $row_data['uralensis_request_id'] . '" class="flag_change">';
+                    $encode .= '<img data-toggle="tooltip" data-placement="top" title="This case marked awaiting reviews." src="' . base_url('assets/img/flag_gray.png') . '">';
+                    $encode .= '</a>';
+                    $encode .= '</li>';
+                    $encode .= '</ul>';
+                    $encode .= '</div>';
+                    $encode .= '</td>';
+                    $encode .= '<td>';
+                    $encode .= '<a class="custom_badge_track" data-toggle="tooltip" data-placement="top" title="" href="javascrip:;" data-original-title="View your record comments or add comments.">';
+                    $encode .= '<img src="' . base_url('assets/img/comment-bubble.png') . '">&nbsp;';
+                    $encode .= '<span class="badge bg-danger">0</span>';
+                    $encode .= '</a>';
+                    $encode .= '</td>';
+                    $count_docs_result = $this->Doctor_model->count_documents($row_data['uralensis_request_id'], $doctor_id);
+                    $encode .= '<td>';
+                    $encode .= '<a class="custom_badge_track" data-toggle="tooltip" data-placement="top" title="" href="javascript:;" data-original-title="View your record comments or add comments.">';
+                    $encode .= '<img src="' . base_url('assets/img/docs-black.png') . '">&nbsp;';
+                    $encode .= '<span class="badge bg-danger">' . $count_docs_result . '</span>';
+                    $encode .= '</a>';
+                    $encode .= '</td>';
+                    $encode .= '<td>';
+                    $encode .= '<a class="custom_badge_tat">';
+
+                    $now = time(); // or your date as well
+                    $date_taken = !empty($row_data['date_taken']) ? $row_data['date_taken'] : '';
+                    $request_date = !empty($row_data['request_datetime']) ? $row_data['request_datetime'] : '';
+                    $tat_date = '';
+
+                    if (!empty($date_taken)) {
+                        $tat_date = $date_taken;
+                    } else {
+                        $tat_date = $request_date;
+                    }
+
+                    $compare_date = strtotime("$tat_date");
+                    $datediff = $now - $compare_date;
+                    $record_old_count = floor($datediff / (60 * 60 * 24));
+
+                    $badge = '';
+                    if ($record_old_count <= 10) {
+                        $badge = 'bg-success';
+                    } elseif ($record_old_count > 10 && $record_old_count <= 20) {
+                        $badge = 'bg-warning';
+                    } else {
+                        $badge = 'bg-danger';
+                    }
+
+                    $encode .= '<span class="badge ' . $badge . '">' . $record_old_count . '</span>';
+                    $encode .= '</a>';
+                    $encode .= '</td>';
+                    $encode .= '<td><a href="' . base_url('index.php/doctor/doctor_record_detail/' . $row_data['uralensis_request_id']) . '"><img src="' . base_url('assets/img/edit.png') . '"></td>';
+                    $encode .= '<td class="dropdown tg-userdropdown tg-menu-dropdown">';
+                    $encode .= '<a href="javascript:;" data-toggle="dropdown" aria-expanded="true"><span class="lnr lnr-menu"></span></a>';
+                    $encode .= '<ul class="dropdown-menu tg-themedropdownmenu" aria-labelledby="tg-adminnav">';
+                    $encode .= '<li>';
+                    $encode .= '<a href="javascript:;"><i class="lnr lnr-trash"></i><em>Delete</em></a>';
+                    $encode .= '</li>';
+                    $encode .= '</ul>';
+                    $encode .= '</td>';
+                    $encode .= '</tr>';
+                }
+
+                $encode .= '</table>';
+            }
+
+            $json['type'] = 'success';
+            $json['track_data'] = $encode;
+            $json['msg'] = 'Case Inserted Successfully.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * Get track template statuses
+     * @return data  
+     */
+    public function get_track_template_statuses($record_id = '', $get_type = '') {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        if (!empty($record_id)) {
+            if (!empty($get_type) && $get_type === 'recent') {
+                return $this->db->where('ura_rec_track_record_id', $record_id)->order_by("ura_rec_track_id", "desc")->limit(1)->get('uralensis_record_track_status')->row_array();
+            } elseif (!empty($get_type) && $get_type === 'all') {
+                return $this->db->where('ura_rec_track_record_id', $record_id)->order_by("ura_rec_track_id", "desc")->get('uralensis_record_track_status')->result_array();
+            }
+        }
+    }
+
+    /**
+     * Create New Session Track List
+     */
+    public function create_new_session_track_record_list() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $json = array();
+
+        if (isset($_SESSION) && !empty($_SESSION['session_records'])) {
+
+            //Get the Db 
+            $session_records_ids = $this->session->userdata('session_records');
+
+            //Save Session Record Ids Into Database...
+            //Prepare Data for insertion
+            $user_id = $this->ion_auth->user()->row()->id;
+            $reocrd_data = array(
+                'ura_track_sess_rec_data' => serialize($session_records_ids),
+                'ura_track_sess_rec_user_id' => $user_id,
+                'timestamp' => time(),
+                'ura_date_format' => date('Y-m-d')
+            );
+            $this->db->insert('uralensis_track_session_records', $reocrd_data);
+
+            $this->session->unset_userdata('session_records');
+            $this->session->unset_userdata('record_ids');
+            $json['type'] = 'success';
+            $json['msg'] = 'Session Records Found & List Created.';
+            echo json_encode($json);
+            die;
+        } else {
+            $json['type'] = 'error';
+            $json['msg'] = 'No record found in session.';
+            echo json_encode($json);
+            die;
+        }
+    }
+
+    /**
+     * View Session records
+     */
+    public function view_session_records() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $this->load->view('doctor/inc/header');
+        $this->load->view('doctor/record_tracking/view_session_records');
+        $this->load->view('doctor/inc/footer');
+    }
+
+    /**
+     * Print Session Records DB Data
+     */
+    public function print_session_records_document($sess_record_id) {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $session_rec_data = array();
+        if (!empty($sess_record_id) && isset($sess_record_id)) {
+
+            $session_record_serialize_data = $this->db->select('ura_track_sess_rec_data')->where('ura_track_sess_rec_id', $sess_record_id)->get('uralensis_track_session_records')->row_array();
+
+            $extract_data = '';
+            if (!empty($session_record_serialize_data)) {
+                $extract_data = unserialize($session_record_serialize_data['ura_track_sess_rec_data']);
+            }
+
+            $session_rec_data['session_data'] = $this->Doctor_model->get_all_session_records($extract_data);
+        }
+
+        $this->load->view('doctor/record_tracking/sessions_record_pdf', $session_rec_data);
+    }
+
+    /**
+     * Print Session Records
+     */
+    public function print_session_records() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $session_records_ids = $this->session->userdata('session_records');
+
+        $session_rec_data = array();
+        if (!empty($session_records_ids) && isset($session_records_ids)) {
+            $session_rec_data['session_data'] = $this->Doctor_model->get_all_session_records($session_records_ids);
+        }
+
+        $this->load->view('doctor/record_tracking/sessions_record_pdf', $session_rec_data);
+    }
+
+    /**
+     * Set Color Code Session Data
+     */
+    public function set_color_code_session_data() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+        if (isset($_POST)) {
+            $color_code = $this->input->post('color_code');
+            $this->session->unset_userdata('color_code');
+            $this->session->set_userdata('color_code', $color_code);
+        }
+    }
+
+    /**
+     * Generate Bulk Reports
+     */
+    public function generateBulkReports() {
+        if (!$this->ion_auth->logged_in()) {
+            redirect('auth/login', 'refresh');
+        }
+
+        $user_id = $this->ion_auth->user()->row()->id;
+        if (!empty($_GET['id'])) {
+            $records_ids['id'] = $_GET['id'];
+            $record_data[] = $_GET['id'];
+            //Prepare Data For Insertion
+            $data = array(
+                'ura_bulk_report_user_id' => $user_id,
+                'ura_bulk_report_record_data' => $_GET['id'],
+                'ura_bulk_report_timestamp' => time()
+            );
+
+            $this->db->insert('uralensis_bulk_report_history', $data);
+            $this->load->view('doctor/generate_bulk_report', $records_ids);
+        }
+    }
+
+    /**
+     * Save Bulk Report Data
+     */
+//    public function saveBulkReportData() {
+//        if (!$this->ion_auth->logged_in()) { 
+//            redirect('auth/login', 'refresh');
+//        }
+//
+//        if (!empty($_POST)) {
+//            $user_id = $this->ion_auth->user()->row()->id;
+//            $record_ids = serialize($this->input->post('record_ids'));
+//
+//            //Prepare Data For Insertion
+//            $data = array(
+//                'ura_bulk_report_user_id' => $user_id,
+//                'ura_bulk_report_record_data' => $record_ids,
+//                'ura_bulk_report_timestamp' => time()
+//            );
+//
+//            $this->db->insert('uralensis_bulk_report_history', $data);
+//        }
+//    }
+}

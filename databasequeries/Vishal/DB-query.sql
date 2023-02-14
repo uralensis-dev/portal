@@ -1,0 +1,1 @@
+ALTER TABLE `hospital_information` ADD `billing_type` VARCHAR(255) NULL DEFAULT 'by_request' AFTER `logo`;

@@ -1,0 +1,507 @@
+
+.select2-container--default .select2-selection--multiple{height: auto !important;}
+.circle{
+    /*width: 15px;*/
+    /*height: 15px;*/
+    display: inline-block;
+    margin-left: 10px;
+    border-radius: 50;
+    color: #000;
+}
+select.form-control{height: 44px;}
+.vertical-align-p {
+    margin: 10px 0 0 -10px;
+    font-size: 1.5rem;
+}
+.info_nndn tbody tr td{
+    border-top: 0px !important;
+    font-weight: bold;
+}
+.sec_title.p_id, .sec_title.p_id2 {
+    position: relative;
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #eee;
+    border-bottom: 0;
+    margin-bottom: 0;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+#p_id_title{font-size: 20px;}
+.sec_title.p_id a.checv_up_down, .sec_title.p_id2 a.checv_up_down {
+    position: absolute;
+    top: 50%;
+    margin-top: -13px;
+    right: 25px;
+    font-size: 20px;
+}
+.custom_badge_tat .badge {
+    min-width: 36px;
+    line-height: 28px;
+    min-height: 36px;
+}
+ul li.hover_it{position: relative;}
+ul.list-unstyled.hover_cont {
+    position: absolute;
+    left: -40px;
+    width: 200px;
+    top: 46px;
+    padding: 5px 0;
+    display: none;
+}
+ul li.hover_it:hover ul.hover_cont {
+    display: block;
+}
+.npr {
+    padding-right: 0;
+}
+.new_sel:focus{
+    border-color: #006df1
+}
+
+.circle.circle_blue{
+    background: #006df1;
+}
+.circle.circle_green{
+    background: #92dd59;
+}
+.circle.circle_yellow{
+    background: #f0ce3b;
+}
+.circle.circle_black{
+    background: #000;
+}
+.circle.circle_red{
+    background: #e74c3c;
+}
+
+.carousel-control.left, .carousel-control.right{
+    background-image: unset !important;
+    background-repeat: unset;
+}
+.carousel-control.left{
+    left: 10px !important
+}
+.carousel-control.right{
+    right: 10px !important
+}
+.carousel-control{
+    bottom: unset !important;
+    font-size: 32px  !important;
+    text-shadow: unset  !important;
+    color: #000  !important;
+    top: 50%  !important;
+    width: auto !important;
+    /*left: 0  !important;*/
+    transform: translateY(-50%)  !important;
+}
+.p-l-0{
+    padding-left: 0;
+}
+.carousel-inner .item a{color: #000;}
+.carousel-inner .item img{
+    width: 100%;
+    height: 220px;
+}
+.tg-nextecord a i, .tg-previousrecord a i {
+    width: 46px;
+    height: 46px;
+    font-size: 36px;
+    line-height: 41px;
+}
+.tg-searchrecord fieldset .form-group .form-control{height: 46px; width: 260px; font-size: 16px;}
+.tg-searchrecord fieldset .form-group i{top: 6px; font-size: 26px;}
+.page-title{
+    float: none;
+}
+.cims_area span.circle {
+    display: inline-block;
+    background: #f5f5f5;
+    height: 50px;
+    width: 50px;
+    border: 1px solid #ddd;
+    line-height: 3.5;
+    text-align: center;
+}
+.page-header .breadcrumb {
+    color: #6c757d;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 0;
+    display: block;
+    padding-left: 0 !important;
+    overflow:unset !important; 
+}
+.cims_area .wrap_con{
+position: relative;
+}
+.cims_area .tabs_area{
+    width: 80px;
+    position: fixed;
+    right: 0;
+    top: 200px;
+}
+
+.microscopy_title_detail {
+    margin-left: 20px;
+}
+#sendprivatemessage .form-group {
+    width: 100%;
+}
+
+.cims_area .nav-tabs.nav-tabs-solid > li {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+.cims_area .nav-tabs.nav-tabs-solid > li a {
+    display: block;
+    background: #fff;
+    height: 80px;
+    border-bottom: 1px solid #ddd;
+    line-height: 3.5;
+}
+.cims_area .nav-tabs.nav-tabs-solid > li a.active{
+    background: #00c5fb;
+    line-height: 3.5;
+}
+.cims_area .tab-content{
+    width: 92%;
+    float: left;
+}
+.cims_area .nav-link .simple{width: 50px;}
+.cims_area .nav-link.active .simple{display:none;}
+.cims_area .on_active{display: none;}
+.cims_area .nav-link.active .on_active{display:block; margin: 0 auto; width: 50px;}
+
+.cims_area span.circle {
+    display: inline-block;
+    background: #f5f5f5;
+    height: 50px;
+    width: 50px;
+    border: 1px solid #ddd;
+    line-height: 3;
+    text-align: center;
+}
+.cims_area span.circle.bg-warning{
+    color: #fff;
+    border-color: #ffbc34;
+    box-shadow: 0 0 2px #ffbc34;
+}
+
+.thumbnail p{
+    color: #555;
+    text-align: center;
+    padding: 0 6px;
+}
+.thumbnail_slide {
+    padding: 10px 12px;
+    
+    min-width: 85px !important;
+    width: 123px !important;
+    background-color: rgba(250, 250, 250, 1);
+    border-radius: 15px;
+}
+.thumbnail_slide label {
+    font-size: 1.2rem;
+    line-height: 13px; 
+}
+
+.thumbnail_slide_container {
+    max-width: 175px;
+}
+
+.page-buttons .btn{font-size: 14px;}
+
+.doctorCard .tg-themeinputbtn {
+    padding-left: 22px;
+    background: transparent !important;
+}
+.page-header .breadcrumb li:first-child:before{
+    display: none;
+}
+
+.flags-select{
+    width: 265px;
+}
+.second-sidebar{
+    top: 185px !important;
+}
+ .badge-lg, .tg-namelogo{
+    margin: 0 5px;
+    width:46px;
+    height: 46px;
+    font-size: 18px;
+    line-height: 2.5;
+}
+/*.tg-namelogo{line-height: 2.4}*/
+
+.nav-tabs{border-bottom: 0px;}
+.nav-tabs a.tg-detailsicon{
+    background: #6c757b !important;
+    color: #fff !important;
+    margin-right: 10px;
+}
+a#show_hidden:hover, a#show_hidden:focus{
+    background: #555 !important;
+}
+.nav-tabs a.tg-detailsicon .tg-notificationtag{
+    background: #6c757b;
+    border-color:#6c757b;
+    line-height: 26px;
+    font-size: 14px;
+    width: 30px; 
+    height: 30px;
+    top: -20px;
+    right: -10px; 
+}
+.sec_title, .sec_title a{
+    font-size: 20px !important;
+    font-weight: 500;
+    color: #1f1f1f;
+}
+.checv_up_down{
+    margin-left: 20px;
+}
+.delete_add_specimen a.tg-detailsicon{
+    float: right;
+    margin: 0 3px;
+}
+.show{display: block !important;}
+.tg-nameandtrackimg{
+    position: absolute;
+    top: 0;
+    right: 15px;
+}
+.carousel-inner {
+    width: 100%;
+    max-width: 90%;
+    margin: 30px auto;
+    padding: 30px 35px 10px;
+}
+.carousel-control-prev, .carousel-control-next{
+    width: 50px;
+    opacity: 1;
+}
+.carousel-control-prev .fa, .carousel-control-next .fa{
+    border: 1px solid #fff;
+    font-size: 18px;
+    border-radius: 20px;
+    padding: 10px 12px;
+    color: #222;
+
+}
+.nothing{
+    background: none;
+    box-shadow: none;
+    padding: 0px;
+    border-radius: 0px;
+    border:0px;
+}
+.breadcrumb{padding: 0 !important}
+
+.microscopy-form-container {
+    border: 1px solid rgba(230, 230, 230, 1);
+    margin-top: 30px;
+    width: 100%;
+}
+#macroscopic-description-container {
+    height: 320px;
+}
+
+#specimen_macroscopic_description {
+    height: 90%;
+}
+
+@media screen and (min-width: 1600px) {
+    body{font-size: 18px;}
+    .tg-searchrecordoptionvtwo li a {
+        width: 46px;
+        height: 46px;
+    }
+
+}
+.checked_chk ul{
+        border:1px solid #dddddd;
+    }
+    .checked_chk ul li{
+        border-bottom:1px solid #dddddd;
+        padding: 3px 10px 0;
+    }
+    .checked_chk ul li:last-child{
+        border-bottom:0px;
+    }
+    .checked_chk ul li label{
+        margin-bottom: 0px;
+    }
+    .custom-table-search tr td{
+        text-transform: capitalize;
+    }
+    .cinput input{
+        width: 20px;
+        height: 20px;
+    }
+
+    .qucikSearch{
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        width: 100%;
+    }
+    .qucikSearch li{
+        padding:0 1px 5px;
+        float: left;
+        width: 33%;
+    }
+    .specimen_list li{position: relative;}
+    .specimen_list li:not(:last-child){margin-right: 2px;}
+    .specimen_list li a {
+        border: 1px solid #ccc;
+        color: #000;
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        text-align: center;
+        line-height: 2.2;
+        border-radius: 20px;
+    }
+    .specimen_list li.last-child a{
+        /*border:0;*/
+        /*background: transparent;*/
+    }
+    .specimen_list_inners {
+        display: none;
+        position: absolute;
+        min-width: 140px;
+        right: 0;
+        padding-top: 5px;
+        /*width: 100%;*/
+    }
+
+    .specimen_list li.last-child a{
+        padding: 0 5px;
+        box-sizing: border-box;
+    }
+    .specimen_list li.last-child a img{width: 100%; height: auto}
+    .specimen_list li.last-child a.white{
+        display: none;
+    }
+    .specimen_list li:hover .specimen_list_inners{display: block;}
+    .specimen_list li.last-child:hover a.white{
+        display: block;
+    }
+    .specimen_list li.last-child:hover a.blk{
+        display: none;
+    }
+    .specimen_list li img{
+        width: 39px;
+        height: 38px;
+    }
+    .specimen_list li a:hover, .specimen_list li a:focus, .specimen_list li a.active{
+        background-color: #009efb;
+        border: 1px solid #009efb;
+        color: #fff;
+    }
+    /*.specimen_list li.last-child a:hover,.specimen_list li.last-child a:focus,*/
+    /*.specimen_list li.last-child a.active{background-color: unset; border:unset;}*/
+    .qucikSearch li a{font-size: 14px; padding: 4px;}
+
+    .qucikSearch li label{margin-bottom: 0px;}
+    @media screen and (min-width: 1500px) {
+        .qucikSearch li{width: 33%;}
+        .qucikSearch li a{font-size: 16px;}
+    }
+    @media screen and (min-width: 1800px) {
+        .qucikSearch li{width: calc(100%/5);padding: 2px;}
+    }
+[class^="ti-"],
+[class*=" ti-"] {
+    line-height: inherit;
+}
+
+#slide-carousel {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.slick-prev:before,
+.slick-next:before {
+    color: black !important;
+}
+
+.table-view-container {
+    background-color: rgb(250, 250, 250);
+    width: 100%;
+    height: 68px;
+    padding: 10px;
+    border: 1px solid rgb(180, 180, 180);
+}
+
+.table-view-heading {
+    margin-bottom: 1px;
+    font-size: 1.65rem;
+    color: rgba(100, 100, 100, 0.8);
+    font-weight: bold;
+}
+
+#table-view-patient .row .col-sm-3,
+#table-view-request .row .col-sm-3 {
+    margin: 0;
+    padding: 0;
+}
+
+#table-view-patient,
+#table-view-request {
+    margin: 10px 10px 10px 20px;
+}
+
+#table-view-patient fieldset,
+#table-view-request fieldset {
+    margin-bottom: 20px;
+}
+
+.form_input_container {
+    height: 43px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 0 15px;
+}
+
+.form_input {
+    display: inline-block;
+    width: 82%;
+    border: none !important;
+    margin-top: -17px !important;
+    background-color: transparent !important;
+}
+
+#edit-view-patient .form-group {
+    height: 100px;
+}
+
+#edit-view-request .form-group {
+    height: 100px;
+}
+
+.radial_btn_container {
+    width: 15%;
+    margin: 0;
+    height: 25px;
+    margin-top: 7px;
+    display: inline-block;
+}
+
+.table_view_svg {
+    margin-top: 8px;
+    margin-left: 8px;
+}
+@media print{
+    body, .page-wrapper{background:#fff!important; margin: 0 !important}
+    .header, .sidebar,.card,.page-header,.print_button{display: none;}
+    .card.print_section{border:0px; box-shadow: unset; display: block; width: 100%;}
+    .card-header{border-bottom: 0px;}
+    #print_section{display: block; width: 100%;}
+
+
+}

@@ -1,0 +1,338 @@
+Code,Description,Type
+T01000,Skin,t1
+TY4100,Abdomen,t1
+TY4300,Abdominal Wall,t1
+TX8500,Acoustic Nerve,t1
+T61300,Adenoid,t1
+T1X010,Adipose Tissue,t1
+T93000,Adrenal Gland,t1
+T58700,Ampulla of Vater,t1
+TY1701,Anal Region,t1
+T12750,Ankle,t1
+T69000,Anus,t1
+T42000,Aorta,t1
+T39000,Aortic Valve,t1
+T66000,Appendix,t1
+T04200,Areola,t1
+TY8020,Arm Left,t1
+TY8010,Arm Right,t1
+T41000,Artery,t1
+T12020,Articular Capsule,t1
+T12010,Articular Cartilage,t1
+TXY200,Auditory Canal,t1
+TX9611,Autonomic Ganglion,t1
+TY8100,Axilla,t1
+T04280,Axillary Tail Of Breast,t1
+TY1100,Back,t1
+T80500,Bartholin's Gland,t1
+T5Y300,Bile Duct Cytologic Material,t1
+T58000,Bile Duct Extra Hepatic,t1
+T56110,Bile Duct Intrahepatic,t1
+T74000,Bladder Urinary,t1
+T40000,Blood Vessel,t1
+T59200,Body Of Pancreas,t1
+T1X500,Bone,t1
+T06000,Bone Marrow,t1
+T65000,Bowel Small Nos,t1
+TX2000,Brain,t1
+TX2050,Brain Stem,t1
+T04000,Breast,t1
+T04030,Breast Female Left,t1
+T04020,Breast Female Right,t1
+T86300,Broad Ligament,t1
+T2Y412,Bronchial Brushing Material,t1
+T2Y416,Bronchiolo-Alveolar Lavage,t1
+T2Y414,Bronchial Washing Material,t1
+T27000,Bronchiole,t1
+T26000,Bronchus,t1
+T64320,Brunner's Gland,t1
+T16000,Bursa,t1
+TY1600,Buttock,t1
+T67100,Caecum,t1
+T35000,Cardiac Valve,t1
+T30000,Cardiovascular System NOS,t1
+T45010,Carotid Artery,t1
+T1X700,Cartilage,t1
+TX1880,Central Canal Of Spinal Cord,t1
+TX6000,Cerebellum,t1
+TX2020,Cerebral Cortex,t1
+TX2060,Cerebral Hemisphere,t1
+TX2080,Cerebral Hemisphere Left,t1
+TX2070,Cerebral Hemisphere Right,t1
+TX5110,Cerebral Peduncle,t1
+TX1000,Cerebrospinal Fluid,t1
+TX1010,Cerebrospinal Fluid Cytologic Material,t1
+T8X310,Cervical Cytologic Material,t1
+T83700,Cervical Stump,t1
+T83000,Cervix Uterine,t1
+TY2150,Chest Wall,t1
+T88220,Chorionic Villi,t1
+T11310,Clavicle,t1
+T80400,Clitoris,t1
+T10830,Coccyx,t1
+T67000,Colon,t1
+T67200,Colon Ascending,t1
+T67600,Colon Descending,t1
+T67300,Colon Hepatic Flexure,t1
+T67995,Colon Left,t1
+T67965,Colon Right,t1
+T67700,Colon Sigmoid,t1
+T67500,Colon Splenic Flexure,t1
+T67400,Colon Transverse,t1
+T6X810,Colonic Cytologic Material,t1
+T67950,Colostomy,t1
+T24470,Commissure Of Larynx,t1
+T58500,Common Bile Duct,t1
+T45100,Common Carotid Artery,t1
+TXX860,Conjunctiva,t1
+TXX200,Cornea,t1
+T3000,Coronary Artery,t1
+T2700,Corpus Callosum,t1
+T2100,Corpus Uteri,t1
+T8205,Decidua,t1
+T1200,Dermis,t1
+T2400,Diaphragm,t1
+TX510,Duodenal Cytologic Material,t1
+T4300,Duodenum,t1
+TY100,Ear External,t1
+T1330,Eccrine Gland,t1
+T8300,Elbow,t1
+T4000,Endocardium,t1
+TX320,Endocervical Cytologic Material,t1
+T3300,Endocervix,t1
+TX430,Endometrial Cytologic Material,t1
+T4000,Endometrium,t1
+T1100,Epidermis,t1
+T9100,Epididymis,t1
+T9000,Epididymis Vas And Scrotum NOS,t1
+T4200,Epigastric Region,t1
+T4010,Epiglottis,t1
+T3100,Exocervix,t1
+TX000,Eye,t1
+TX810,Eyelid,t1
+T0200,Face,t1
+T8140,Facial Nerve,t1
+T6000,Fallopian Tube And Broad Ligament NOS,t1
+T8600,Fascia,t1
+T47400,Femoral Artery,t1
+T11710,Femur,t1
+T88200,Fetal Membranes,t1
+T89001,Fetal Parts,t1
+TY8800,Finger,t1
+TY1310,Flank,t1
+TY9700,Foot,t1
+TY9720,Foot Left,t1
+TY9710,Foot Right,t1
+TY8500,Forearm,t1
+TY8520,Forearm Left,t1
+TY8510,Forearm Right,t1
+TY0110,Forehead,t1
+T76330,Foreskin Of Penis,t1
+TX2200,Frontal Lobe,t1
+T57000,Gallbladder,t1
+T63300,Gastric Cardia,t1
+T6X310,Gastric Cytologic Material,t1
+T63400,Gastric Fundus,t1
+T62350,Gastro-oesophageal Junction,t1
+T54910,Gingiva,t1
+T76300,Glans Penis,t1
+T71200,Glomerulus,t1
+T24440,Glottis,t1
+T01400,Hair,t1
+TY8700,Hand,t1
+TY8720,Hand Left,t1
+TY8710,Hand Right,t1
+TY0100,Head,t1
+T11711,Head Of Femur,t1
+T59100,Head Of Pancreas,t1
+T32000,Heart,t1
+TY1500,Hip,t1
+T81400,Hymen,t1
+TX4600,Hypothalamus,t1
+T65300,Ileocecal Valve,t1
+T65920,Ileostomy,t1
+T65200,Ileum,t1
+T11340,Ilium,t1
+T46525,Inferior Mesenteric Artery,t1
+TY7000,Inguinal Region,t1
+TY7020,Inguinal Region Left,t1
+TY7010,Inguinal Region Right,t1
+T12103,Intervertebral Disc,t1
+T6X410,Intestinal Cytologic Material,t1
+T99000,Islets Of Langerhans,t1
+TY0213,Jaw,t1
+T65100,Jejunum,t1
+T71000,Kidney,t1
+TY9200,Knee,t1
+T24000,Larynx And Epiglottis NOS,t1
+TY9400,Leg,t1
+TY9420,Leg Left,t1
+TY9410,Leg Right,t1
+TX1310,Leptomeninges,t1
+T52000,Lip,t1
+T56000,Liver,t1
+T28000,Lung,t1
+T28500,Lung Left,t1
+T28100,Lung Right,t1
+T08000,Lymph Node,t1
+T08900,Lymph Nodes Multiple Sites,t1
+T0Y400,Mammary Cytologic Material,t1
+T10180,Mandible,t1
+T10170,Maxilla,t1
+T65600,Meckel's Diverticulum,t1
+TY2300,Mediastinum,t1
+TX1110,Meninges,t1
+T12013,Meniscus Of Joint,t1
+T46500,Mesenteric Artery,t1
+T64200,Mesentery,t1
+T38000,Mitral Valve,t1
+T51000,Mouth,t1
+T33010,Myocardium,t1
+T01600,Nail,t1
+T21200,Nasal Cartilage,t1
+T2X111,Nasal Cytologic Material,t1
+T23000,Nasopharynx,t1
+TY0600,Neck,t1
+TX0000,Nervous System,t1
+T04100,Nipple,t1
+T21000,Nose,t1
+T6X210,Oesophageal Cytologic Material,t1
+T62000,Oesophagus,t1
+T63850,Omentum,t1
+T51020,Oral Cavity,t1
+TY0480,Orbit,t1
+T87800,Ovaries Right And Left,t1
+T87000,Ovary,t1
+T87020,Ovary Left,t1
+T87010,Ovary Right,t1
+T51100,Palate,t1
+T59000,Pancreas,t1
+T5Y410,Pancreatic Cytologic Material,t1
+T59010,Pancreatic Duct,t1
+T97000,Parathyroid Gland,t1
+T55100,Parotid Gland,t1
+TY6261,Pelvic Floor,t1
+T76000,Penis,t1
+T3X110,Pericardial Cytologic Material,t1
+T31000,Pericardium,t1
+T02500,Perineum,t1
+T6X940,Peritoneal Cytologic Material,t1
+TY4400,Peritoneum,t1
+T60000,Pharynx,t1
+T91000,Pituitary Gland,t1
+T88100,Placenta,t1
+T88000,Placenta Cord and Implantation Site NOS,t1
+T29000,Pleura,t1
+T2Y610,Pleural Cytologic Material,t1
+T48810,Portal Vein,t1
+T48812,Portal Vein Intrahepatic,t1
+TY0171,Preauricular Area,t1
+T77100,Prostate,t1
+T77000,Prostate And Seminal Vesicle NOS,t1
+T11360,Pubis,t1
+T63700,Pylorus,t1
+T68000,Rectum,t1
+T48740,Renal Vein,t1
+T20000,Respiratory System,t1
+TY4600,Retroperitoneum,t1
+T55000,Salivary Gland,t1
+TY0160,Scalp,t1
+T11280,Scapula,t1
+TXX110,Sclera,t1
+T79400,Scrotum,t1
+T77500,Seminal Vesicle,t1
+T1X120,Serosa,t1
+TY1220,Shoulder,t1
+T22300,Sinus Ethmoid,t1
+T22200,Sinus Frontal,t1
+T22100,Sinus Maxillary,t1
+T22000,Sinus Paranasal,t1
+T22400,Sinus Sphenoid,t1
+T00003,Site Not Specified,t1
+T10101,Skull,t1
+T64000,Small Intestine,t1
+T1X000,Soft Tissue,t1
+T79300,Spermatic Cord,t1
+TX7410,Spinal Cord,t1
+T07000,Spleen,t1
+T2Y030,Sputum,t1
+T10310,Sternum,t1
+T63000,Stomach,t1
+T03000,Subcutaneous Tissue,t1
+T1Y010,Synovial Cytologic Material,t1
+T12040,Synovial Tissue,t1
+T59300,Tail Of Pancreas,t1
+T45270,Temporal Artery Superficial,t1
+TX2500,Temporal Lobe,t1
+T17010,Tendon,t1
+T78020,Testis Left,t1
+T78010,Testis Right,t1
+TY9100,Thigh,t1
+TY2100,Thorax,t1
+T98000,Thymus,t1
+T96000,Thyroid Gland,t1
+T96200,Thyroid Gland Left Lobe,t1
+T96100,Thyroid Gland Right Lobe,t1
+TY9800,Toe,t1
+T53000,Tongue,t1
+T61100,Tonsil,t1
+T61120,Tonsil Left,t1
+T61110,Tonsil Right,t1
+T61000,Tonsils And Adenoids,t1
+T54000,Tooth Gum And Supporting Structure NOS,t1
+T25000,Trachea,t1
+T2Y310,Tracheal Cytologic Material,t1
+T88110,Trophoblast,t1
+TY1000,Trunk,t1
+T88800,Umbilical Cord,t1
+TY4230,Umbilical Region,t1
+T2X030,Upper Respiratory Tract Cytologic Material,t1
+T73000,Ureter,t1
+T73020,Ureter Left,t1
+T73010,Ureter Right,t1
+T74320,Ureteral Orifice,t1
+T75000,Urethra,t1
+T7X100,Urine,t1
+T82000,Uterus,t1
+T82900,Uterus And Cervix,t1
+T82910,Uterus And Fallopian Tubes,t1
+T82920,Uterus Fallopian Tubes And Ovaries,t1
+T81000,Vagina,t1
+T8X210,Vaginal Cytologic Material,t1
+TX8775,Vagus Trunk Posterior,t1
+T79200,Vas Deferens,t1
+T48600,Vena Cava,t1
+T10510,Vertebra,t1
+T24400,Vocal Cord,t1
+T80100,Vulva,t1
+T80000,Vulva Labia And Clitoris NOS,t1
+T8X110,Vulvar Cytologic Material,t1
+TY8600,Wrist,t1
+T13000,Skeletal Muscle,t1
+T54940,Alveolar Ridge,t1
+T51300,Buccal Mucosa,t1
+T51210,Floor Of Mouth,t1
+T54912,Gingiva Attached,t1
+T24110,Larynx,t1
+T52250,Lip,t1
+T52200,Lip Lower,t1
+T52100,Lip Upper,t1
+T22130,Maxilliary Antrum Mucosa,t1
+T21340,Nasal Septum,t1
+T23010,Nasopharynx,t1
+T51100,Palate,t1
+T60110,Pharynx,t1
+T53000,Tongue,t1
+T55400,Minor Salivary Gland,t1
+T55100,Parotid Gland,t1
+T55200,Sublingual Gland,t1
+T55300,Submandibular,t1
+T22300,Ethmoid Sinus,t1
+T22200,Frontal Sinus,t1
+TXY520,Mastoid,t1
+T22100,Maxilliary Antrum,t1
+TXY300,Ear Middle,t1
+T2X120,Nasal Cavity,t1
+T10180,Mandible,t1
+T10170,Maxilla,t1
+T54010,Tooth Nos,t1

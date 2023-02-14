@@ -1,0 +1,13 @@
+
+application/config/database.php
+application/config/config.php
+application/logs/
+uploads
+lab_uploads
+admin_uploads
+access.log
+error.log
+.idea
+application/config/database.php
+application/config/database.php
+uploads/email.txt

@@ -1,0 +1,360 @@
+/*arrow Breadcrumbs*/
+.breadcrumb-item+.breadcrumb-item::before {}
+.breadcrumb { 
+  list-style: none; 
+  overflow: hidden; 
+  margin: 40px;
+  padding: 0 0 0 20px !important;
+  margin: 0px;
+}
+.breadcrumb li { 
+  float: left; 
+}
+.breadcrumb li {
+  color: #8e8e8e;
+  text-decoration: none; 
+  padding-left: 0px !important;
+  position: relative; 
+  display: block;
+  float: left;
+}
+.breadcrumb li div {
+  height: 46px;
+  line-height: 44px;
+  padding: 0px 30px 0px 25px;
+  background: #f5f7fa; 
+  border: 1px solid #dee2e6;
+  border-right: 0px;
+   position: relative; 
+  display: block;
+}
+
+.breadcrumb li:before { 
+  width: 0; 
+  height: 0; 
+  border-top: 23px solid transparent;
+  border-bottom: 23px solid transparent;
+  border-left: 23px solid #f5f7fa;
+  content: " "; 
+  display: block; 
+ position: absolute;
+ right: -23px;
+ top:0px;
+  z-index: 1; 
+}   
+.breadcrumb li:nth-child(2)       { background: #ffffff; }
+.breadcrumb .second-child:before {
+  content: '';
+  border-left: 23px solid #ffffff;
+  right:-28px;
+}
+
+.breadcrumb li div:before {
+  content: '';
+    display: inline-block;
+    height: 1px;
+    width: 31px;
+    position: absolute;
+    right: -27px;
+    bottom: 11px;
+    border-top: solid 1px #dee2e6;
+    -moz-transform: rotate(80deg);
+    -ms-transform: rotate(80deg);
+    -o-transform: rotate(80deg);
+    -webkit-transform: rotate(80deg);
+    transform: rotate(135deg);
+}
+.breadcrumb li div:after {
+  content: '';
+    display: inline-block;
+    height: 1px;
+    width: 33px;
+    position: absolute;
+    right: -27px;
+    top: 11px;
+    border-top: solid 1px #dee2e6;
+    -moz-transform: rotate(40deg);
+    -ms-transform: rotate(40deg);
+    -o-transform: rotate(40deg);
+    -webkit-transform: rotate(40deg);
+    transform: rotate(44deg);
+}
+
+.breadcrumb li:nth-child(2) div { background:        #ffffff; padding: 0px 20px 0px 35px;}
+
+.breadcrumb li:nth-child(1) div:after {z-index: 99}
+.breadcrumb li:nth-child(1) div:before {z-index: 99}
+
+.breadcrumb .badge-lg {width: 30px; height: 30px; border-radius: 50%; display: inline-block; margin:10px 5px; line-height: 24px;}
+.breadcrumb .badge-lg i {line-height: 24px;}
+.breadcrumb .badge-sm {width: 20px; height: 20px; border-radius: 50%; display: inline-block; margin:10px 2px; line-height: 24px;}
+.page-title {line-height: 42px; float: left;}
+
+.patient-group .card {border-radius: 0px;}
+.patient-group .card .card-body {padding: 0.4rem  0.7rem;}
+
+.btn {border-radius: 0px;}
+.btn-light {
+  background-color: #ffffff;
+  border-color: #f8f9fa;
+  border-color: #ededed;
+}
+.btn-light .badge {color: #ffffff;}
+
+/*Background Blue*/
+.bg-blue {
+  background-color: #1b75cd !important
+}
+
+.btn-round {border-radius: 50%;}
+
+.patient-group .page-header {margin-bottom: 0px;}
+.patient-group .nav-tabs li {
+  border-top:solid 2px transparent;
+}
+.patient-group .nav-tabs li a.active {
+  border-top: double 2px #094785 !important;
+ 
+}
+.patient-group .nav-tabs li.nav-item a,
+.patient-group .nav-tabs li.nav-item a:hover
+{
+  border: solid 1px #dee2e6;
+  margin:0px !important;
+  border-bottom: 0px;
+}
+
+.block-tab {display: inline-block; width: 100%}
+.block-tab li {float: left; height: 44px;}
+.block-tab li.pull-right {float: right !important; margin-left: 4px;}
+.block-tab li a {height: 43px;}
+.block-tab .right-btns {position:relative;}
+.block-tab .pull-right .btn {width: 42px !important; height: 42px !important; float: right}
+.block-tab .right-btns .btn-sicon { display: flex; justify-content: center; align-items: center; border-radius: 0px !important;}
+.block-tab .btn.btn-badge {display: block !important; position: relative;}
+
+.block-tab .right-btns .btn-sicon img {max-width: 20px; margin-left:auto; margin-right: auto;}
+.block-tab .input-group {float: right;     width: 115px;}
+.block-tab input {height: 42px !important; width: 70px !important; float: right;}
+.block-tab .btn .badge {
+    color: #fff;
+    font-weight: 700;
+    position: absolute;
+    right: -10px;
+    margin-left: auto;
+    margin-top: -7px;
+    background: #1b75cd;
+    border: solid 2px #ffffff;
+}
+.tg-themeinputbtn ul {
+  background: none;
+}
+.tg-themeinputbtn li {
+    float: left;
+    list-style-type: none;
+    padding: 0px !important;
+    margin:0px;
+}
+.tg-themeinputbtn li + li {
+    margin: 0 0 0 10px;
+
+}
+.tg-themeinputbtn li input {
+    display: none;
+}
+.tg-themeinputbtn li label {
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    color: #263357;
+    line-height: 26px;
+    display: block;
+    font-size: 12px;
+    text-align: center;
+    border-radius: 50px;
+    border: 1px solid #ddd;
+    text-transform: uppercase;
+}
+.tg-themeinputbtn li input[type=checkbox]:checked + label {
+    border: 2px solid #3498db;
+}
+.tg-themeinputbtn li input[type=checkbox]:checked + label:before {
+    content: '';
+}
+
+.doctorCard ul {
+  margin:0px;
+  padding: 0px;
+  background: #fbfbfb;
+}
+.doctorCard ul li{
+  float: left;
+    list-style-type: none;
+    padding: .5rem 1rem;
+}
+  .doctorCard .form-control,  
+.doctorCard .input-group-text,  
+.doctorSCard .input-group-text {border-radius:0px;} 
+.doctorSCard .input-group-append img {max-height: 40px;}  
+.doctorCard textarea{height: 155px;}  
+.doctorSCard textarea {height: 75px;} 
+.doctorRCard textarea {height: 200px;}  
+.doctorCard .input-group-text,  
+ .doctorSCard .input-group-text {max-height: 44px;} 
+.tooltip {max-width:auto !important;width: auto !important;}  
+.tooltip-inner {background: #ffffff; border: solid 1px #e3e3e3; color: #000000; max-width: 450px !important;width: auto !important;}
+.doctorCard textarea {height: 155px;}
+.doctorRCard textarea {height: 200px;}
+.doctorCard .input-group-text {max-height: 44px;}
+.doctorCard .tg-themeinputbtn {
+  width: 99.6%;
+  position: absolute;
+  bottom: 1px;
+  left: 1px;
+  padding-left: 5px;
+  background: #ffffff;
+}
+.doctorCard .tg-themeinputbtn li.pull-right {float: right !important;}
+  .bottom-section {background: #a6a6a6; overflow: hidden; color: #ffffff; text-align: center; padding: 10px; margin-left: -30px; margin-right: -30px;}  
+.bottom-section img {max-width: 40px;}  
+.bottom-section p {margin: 0px; padding: 0px;}
+.second-sidebar {bottom: auto; padding-bottom: 100px; background: #ffffff; overflow: hidden; left: 230px; width: 52px; box-shadow: 0 0px 2px 0 rgba(0, 0, 0, 0.2);}
+.second-sidebar ul {list-style-type: none; padding: 0px; display: inline-block;}
+.second-sidebar ul li {
+  padding: 10px; background: #ffffff;
+  border-bottom: solid 1px #f7f7f7;
+  border-left:solid 2px #ffffff;
+  text-align: center;
+}
+.second-sidebar ul li a.btn {text-align: center;
+    width: 30px;
+    font-size: 12px;
+    height: 30px;
+    line-height: 28px;
+    padding: 0px;} 
+.second-sidebar ul li:hover,
+.second-sidebar ul li.active
+ {
+  border-left:2px solid #c6a85b;
+  background-color: #f5f7fa;
+}
+@media (min-width: 1480px) {
+  .slide-container {flex: 0 0 240px;}
+  .sidebar-patient .content {display: flex;}
+}
+@media (max-width: 1480px) {
+  .slide-container {flex: auto;}
+  .slide-container-inner {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    height: 180px;
+    padding: 15px;
+  }
+  .slide-container .card {
+    float: left;
+    min-width: 190px;
+    margin:0px 10px;
+  }
+  .sidebar-patient .content { flex-direction:column; flex:auto;}
+}
+
+@media only screen and (max-width: 1091.98px) {
+  .page-wrapper.sidebar-patient {
+    margin-left: 60px;
+}
+.page-wrapper.patient-doctor {  
+    margin-left:0px;  
+  }
+  #menu-toggler {display: block !important; float: left; color: #ffffff; margin-top:20px;}
+  .logo-center {display: block !important; margin-left: auto; margin-right: auto; width: 83px; padding: 10px;}
+  .logo-center img {width: 100%}
+  .header-left {display: none;}
+  .patient-menu .collapse {display: none;}
+  .patient-menu .collapse.show {display: block}
+  .sidebar.second-sidebar  {z-index: 1;}
+  .sidebar {
+        margin-left: -225px;
+       
+        -webkit-transition: all 0.4s ease;
+        -moz-transition: all 0.4s ease;
+        transition: all 0.4s ease;
+        z-index: 1041;
+    }
+    .page-title {width: 100%; float: none;}
+    .page-header .breadcrumb {padding: 0px !important; display: block !important;}
+
+}
+#menu-toggler {display: none;}
+.logo-center {display: none;}
+
+.slide-container {padding-left: 15px; padding-right:15px; background: #ffffff; margin-right: 15px; overflow: hidden;}
+.slide-container-inner {padding: 15px; box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2); }
+
+.slide-container .card {
+  display: flex; flex-direction: row-reverse;
+  margin-bottom: 20px;
+  padding: 5px 10px;
+  height: 75px;
+  background: #fcfcfc !important;
+}
+.slide-container .card .title {
+  font-size: 12px;
+  line-height: 12px;
+    height: 40px;
+    width: 60px;
+    text-align: center;
+    text-orientation: upright;
+    display: inline-block;
+    position: absolute;
+    top: 65px;
+    left: 5px;
+    background: none;
+    -webkit-transform-origin: 0 0;
+    transform-origin: 0 0;
+    -webkit-transform: rotate(270deg);
+    transform: rotate(270deg); 
+}
+.slide-container .card .badge {position: absolute; right: -10px; top: 28px; text-align: center;padding: 0px; border-radius:50%; border: solid 1px #e3e3e3; width:20px; height: 20px; line-height: 18px; }
+.slide-container .card .badge i {padding-top:4px;}
+
+.dashboard-wrapper {padding-left:15px; width: 100%}
+.left-btn-cont {display: flex; flex-direction: column; float: left;}
+.left-btn-cont .btn {margin-left: 0px; margin-bottom: 4px; margin-right: 4px; width: 30px; height:30px !important;}
+
+.page-buttons {display: block; width: 100%;}
+.page-buttons .btn {margin-top: 1em; margin-bottom: 1em}
+.page-buttons .btn .btn-lg {margin-top: 0; margin-bottom: 0}
+.btn-sicon {width: 44px; height: 44px !important; border:0px !important; line-height: 44px; padding: 0px; margin-left: 4px; color: #ffffff !important}
+
+.form-control {border-radius: 1px;}
+.pad-0 {padding: 0px !important;}
+.pad-l-0 {padding-left: 0px !important; }
+.right {
+   margin-left: auto;
+ }
+ .alignRight {justify-content: flex-end;}
+.badge-pill.bg-white {color: #000000 !important;}
+.badge.relative {position: relative !important;}
+ .btn-light {border: 1px solid #ededed !important;}
+ .bg-green {background-color: #92dd59}
+ .color-blue {color: #006df1}
+ .color-yellow{color: #f0ce3b}
+ .color-black {color: #000000}
+ .color-red {color: #f62d51}
+ .color-white {color: #ffffff}
+ .color-green {color: #3acf79}
+ .color-green {color: #3acf79}  
+
+ .patient-doctor .card {padding: 15px;} 
+ .patient-doctor .card .btns-cont {float: right; width:300px; padding-right: 15px; display: flex;}  
+  .patient-doctor .btn-lg {height: 44px;} 
+  .patient-doctor .upload-section h3 {text-align: center; margin-top:20px;} 
+  .patient-doctor .ddrop {width: 50%; text-align: center; margin: 20px auto; background: #ededed; padding:25px 15px;}   
+  .doc-card .card {display: flex; flex-direction: row; padding:10px 15px; margin:0 10px; flex: 1;}  
+  .doc-card .card label {flex-grow: 1; margin:0px 15px; font-size: 18px;} 
+  .doc-card .card img {max-height: 30px;} 
+  .doc-card i {font-size: 24px;}  
+  .d-f-flex {display: flex;flex-direction: column;} 
+  .d-f-flex .btn-block {flex: 1}  
+  .ml-1 {margin-left: 5px;} 
+  .tooltipIcon img {max-width: 14px;}

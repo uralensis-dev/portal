@@ -1,0 +1,94 @@
+.circles{
+    width: 750px;
+    height: 750px;
+    margin: 0 auto;
+    position: relative;
+}
+img{width: 100%;}
+.circle{
+    width: 200px;
+    height: 200px;
+    border: 1px solid #9c9c9c;
+    border-radius: 50%;
+    text-align: center;
+    position: absolute;
+    font-weight: bold;
+    line-height: 1;
+    padding: 30px 20px 0;
+}
+.section_title{
+    font-size: 22px;
+    width: 100%;
+    margin-bottom: 15px;
+    font-weight: 500;
+    padding: 0 15px;
+}
+.logo_main {
+    width: 240px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -120px;
+    margin-top: -78px;
+}
+.circle img{
+    margin: 0 0 10px;
+    max-width: 50px;
+}
+.circle.circle_1{
+    top: 0;
+    left: 50%;
+    margin-left: -100px;
+    border-color: teal;
+}
+.circle.circle_2{
+    top: 120px;
+    left: 40px;
+    border-color: #ffc107;
+}
+.circle.circle_3{
+    top: 120px;
+    right: 40px;
+    border-color: #00b7ed;
+}
+.circle.circle_4 {
+    top: 350px;
+    left: 0;
+    border-color: #dc3545;
+}
+.circle.circle_5{
+    top: 350px;
+    right: 0;
+    border-color: #b202b2;
+}
+.circle.circle_6{
+    top: 550px;
+    left: 150px;
+    border-color: #a7a704;
+
+}
+.circle.circle_7{
+    top: 550px;
+    right: 150px;
+    border-color: #7e7e02;
+}
+.circle.circle_1 img, .circle.circle_2 img,.circle.circle_3 img{
+    margin-bottom: 20px;
+}
+.circle.circle_4, .circle.circle_5, .circle.circle_7{
+    padding-top: 50px;
+}
+.circle.circle_6{
+    padding-top: 20px; 
+}
+.dash_bade {
+    height: 30px;
+    width: 30px;
+    text-align: center;
+    padding: 0;
+    line-height: 2.3;
+    border-radius: 20px;
+}
+.badge {
+    font-size: 100% !important;
+}

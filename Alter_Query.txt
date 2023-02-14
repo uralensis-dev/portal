@@ -1,0 +1,117 @@
+##################################
+# Table to save request viewer 
+##################################
+
+CREATE TABLE `request_viewers` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `request_id` int(11) NOT NULL,
+ `viewer_group` int(11) NOT NULL,
+ `viewer_id` int(11) NOT NULL,
+ `viewed_date` date NOT NULL DEFAULT current_timestamp(),
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8
+
+
+##################################
+#Date: 12 July 2022
+# to save multiple test id in one cell
+##################################
+ALTER TABLE `barcode` CHANGE `test_id` `test_id` VARCHAR(255) NOT NULL;
+
+
+##################################
+#Date: 18 July 2022
+# Table to save barcode template
+##################################
+CREATE TABLE `barcode_template` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `hospital_id` int(11) NOT NULL,
+ `patient_name` tinyint(4) NOT NULL DEFAULT 0,
+ `nhs_no` tinyint(4) NOT NULL DEFAULT 0,
+ `dob` tinyint(4) NOT NULL DEFAULT 0,
+ `age` tinyint(4) NOT NULL DEFAULT 0,
+ `gender` tinyint(4) NOT NULL DEFAULT 0,
+ `lab_no` tinyint(4) NOT NULL DEFAULT 0,
+ `lab_no2` tinyint(4) NOT NULL DEFAULT 0,
+ `contact_no` tinyint(4) NOT NULL DEFAULT 0,
+ `created_by` int(11) NOT NULL,
+ `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+ `updated_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE current_timestamp(),
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4
+
+##################################
+#Date: 22 July 2022
+# Table to save specimen label
+##################################
+CREATE TABLE `specimen_pot` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `lab_id` int(11) NOT NULL,
+ `lab_no` varchar(50) NOT NULL,
+ `patient_id` int(11) NOT NULL,
+ `patient_name` varchar(80) NOT NULL,
+ `dob` date DEFAULT NULL,
+ `specimen_id` int(11) NOT NULL,
+ `request_id` int(11) NOT NULL,
+ `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+ `modified_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE current_timestamp(),
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4
+
+##################################
+# Date: 25 July 2022
+# Add field for barcode
+##################################
+- ALTER TABLE `specimen_pot` ADD `barcode_img` VARCHAR(255) NOT NULL AFTER `request_id`;
+- ALTER TABLE `specimen_pot` ADD `digi_number` VARCHAR(255) NOT NULL AFTER `request_id`;
+
+
+##################################
+# Date: 26 July 2022
+# Crate table for bulk upload slide
+##################################
+
+- CREATE TABLE `folders` (
+     `id` int(11) NOT NULL AUTO_INCREMENT,
+     `name` varchar(255) NOT NULL,
+     `parent_id` int(11) DEFAULT NULL,
+     `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+     `modified_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE current_timestamp(),
+     PRIMARY KEY (`id`),
+     KEY `folder_Parent_id_15d85d30` (`parent_id`)
+    ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1
+
+
+- CREATE TABLE `slides` (
+     `id` int(11) NOT NULL AUTO_INCREMENT,
+     `name` mediumtext NOT NULL,
+     `scanned_by` varchar(50) NOT NULL,
+     `scanned_date` date NOT NULL,
+     `inserted_by` varchar(50) NOT NULL,
+     `inserted_date` date NOT NULL,
+     `slide_type` int(11) NOT NULL,
+     `url_path` varchar(500) NOT NULL,
+     `label_url_path` varchar(500) NOT NULL,
+     `group` int(11) NOT NULL,
+     `group_name` varchar(100) NOT NULL,
+     `annotations` tinyint(1) NOT NULL,
+     `folder_id` int(11) NOT NULL,
+     `filesize` double NOT NULL,
+     `tag` varchar(50) NOT NULL,
+     `caseNo` varchar(50) NOT NULL,
+     `deleted_by` varchar(60) DEFAULT NULL,
+     `is_deleted` tinyint(1) NOT NULL,
+     `deleted_date` date DEFAULT NULL,
+     PRIMARY KEY (`id`),
+     KEY `slide_folder_id_id_634bc9a7` (`folder_id`)
+    ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1
+
+
+##################################
+# Date: 4 Aug 2022
+# Add logo for clinic and lab
+##################################
+
+ALTER TABLE `hospital_information` ADD `logo` VARCHAR(255) NOT NULL AFTER `identifier`;
+
+ALTER TABLE `laboratory_information` ADD `logo` VARCHAR(255) NOT NULL AFTER `identifier`;

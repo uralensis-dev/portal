@@ -1,0 +1,130 @@
+body{background: #ccc;}
+.wrapper{width:1170px; margin:0 auto; background: #ffffff;}
+
+#main{
+    width:960px;
+    margin:50px auto;
+    font-family:raleway;
+}
+
+span{
+    color:red;
+}
+
+h2{
+    background-color: #FEFFED;
+    text-align:center;
+    border-radius: 10px 10px 0 0;
+    margin: -10px -40px;
+    padding: 30px;
+}
+
+#login{
+
+    width: 300px;
+    border-radius: 10px;
+    font-family: raleway;
+    border: 2px solid #ccc;
+    padding: 10px 40px 25px;
+    margin: 0 auto;
+
+}
+
+input[type=text],input[type=password], input[type=email]{
+    width:99.5%;
+    padding: 10px;
+    margin-top: 8px;
+    border: 1px solid #ccc;
+    padding-left: 5px;
+    font-size: 16px;
+    font-family:raleway;
+}
+
+input[type=submit]{
+    width: 100%;
+    background-color:#FFBC00;
+    color: white;
+    border: 2px solid #FFCB00;
+    padding: 10px;
+    font-size:20px;
+    cursor:pointer;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+#profile{
+    padding:50px;
+    border:1px dashed grey;
+    font-size:20px;
+    background-color:#DCE6F7;
+}
+
+#logout{
+    float:right;
+    padding:5px;
+    border:dashed 1px gray;
+    margin-top: -60px;
+}
+
+a{
+    text-decoration:none;
+    color: cornflowerblue;
+}
+
+i{
+    color: cornflowerblue;
+}
+
+.error_msg{
+    color:red;
+    font-size: 16px;
+}
+
+.message{
+    /* position: absolute; */
+    font-weight: bold;
+    font-size: 20px;
+    color: #6495ED;
+    /* left: 262px; */
+    /* width: 500px; */
+    text-align: center;
+}
+
+.bg-danger{background:#e04c4c;color:#fff;font-size:16px;}
+#popup, .bMulti {
+    background-color: #FFF;
+    border-radius: 10px 10px 10px 10px;
+    box-shadow: 0 0 25px 5px #999;
+    color: #111;
+    display: none;
+    min-width: 450px;
+    min-height: 250px;
+    padding: 25px;
+}
+
+#popup .logo {
+    color: #2B91AF;
+    font: bold 325% 'Petrona',sans;
+}
+
+.button.b-close, .button.bClose {
+    border-radius: 7px 7px 7px 7px;
+    box-shadow: none;
+    font: bold 131% sans-serif;
+    padding: 0 6px 2px;
+    position: absolute;
+    right: -7px;
+    top: -7px;
+}
+
+.button {
+    background-color: #2B91AF;
+    border-radius: 10px;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+    color: #FFF;
+    cursor: pointer;
+    display: inline-block;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+}

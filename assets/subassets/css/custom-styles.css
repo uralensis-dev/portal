@@ -1,0 +1,301 @@
+
+/*.header {height: 80px;}*/
+.header .header-left .logo {
+	display: block;
+    width: 225px;
+    margin-top: 15px;
+
+}
+.navbar {
+	background-color: #064785;
+    border-top: 1px solid #0968c3;
+	box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.2);
+	height: 46px;
+	left: 0;
+	position: fixed;
+	right: 0;
+	top: 60px;
+	z-index: 100;
+	padding: 0;
+}
+.navbar .top-menu  {
+	display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    padding: 0;
+    margin:0;
+    list-style: none;
+}
+.navbar .top-menu li a {
+	line-height: 46px;
+	color: #ffffff;
+	padding: 0 1rem;
+	display: inline-block;
+}
+.navbar .top-menu li a:hover,
+.navbar .top-menu li.active a {
+	background-color: #064785;
+}
+.page-wrapper{background: #fff;}
+/*.user-menu.nav > li > a {*/
+	/*font-size: 14px;*/
+	/*color: #ffffff;*/
+	/*padding: 3px 8px;*/
+	/*border-right: solid 1px #ffffff;*/
+	/*line-height: 60px;*/
+/*}*/
+
+.user-menu.nav > li:first-child > a {
+	padding-left:0px;
+}
+.no-border {
+	border:0px !important;
+}
+.user-menu.nav > li > a:hover {
+	background: none;
+	text-decoration: underline;
+}
+/*.sidebar {top: 125px;}*/
+.page-wrapper.no-sidebar {
+	margin-left: auto;
+	padding-top: 110px;
+}
+
+.page-wrapper.sidebar-patient {
+	margin-left: 230px;
+	padding-top: 75px;
+}
+.page-header {margin-top: 10px; border-bottom: 0px}
+.user-menu {
+	/*margin:10px 0;*/
+}
+/*.patient-menu .header-left {height: 80px; width: 200px; padding: 0px;}*/
+.patient-menu {height: auto; 
+    margin: 0px;
+    border: 0px;
+    box-shadow: none;
+	background: #fff;
+    list-style: none;
+    overflow: hidden;
+    border-radius: 4px;
+}
+.patient-menu ul {
+    list-style: none;
+    padding: 0;
+}
+.patient-menu li {
+	/*margin-top:15px;*/
+	/*border-right: solid 1px #ffffff;*/
+    min-height: 61px;
+    float: left;
+    width: 20%;
+}
+.patient-menu li img{
+	margin-top: 5px;
+}
+.patient-menu li a {
+	font-size: 14px;
+	color: #222;
+	padding: 5px 15px;
+	min-height: 61px;	
+	line-height: 20px;
+	position: relative;
+	display: block;
+}
+/*.patient-menu > li > a:hover, .patient-menu > li > a:focus{
+	background: rgba(0,0,0,.5);
+}*/
+.patient-menu > li > a > i {
+    font-size: 20px;
+}
+.patient-menu > li > a .badge {
+    /*background-color: #7460ee;*/
+    /*color: #fff;*/
+    font-weight: 700;
+    position: absolute;
+    right: 3px;
+    top: 6px;
+}
+.patient-menu > li > a.btn-icon .badge {
+    right: 50%;
+    left: auto;
+    top: 0px;
+    margin-right: -25px;
+}
+
+.patient-menu .btn-icon>span {display: inline-block;width: 100%; text-align: center; }
+.patient-menu .btn-icon>span:first-child {margin-top:10px;}
+.patient-menu .profile-item {
+	display: flex;
+	flex-direction: row;
+	line-height: 16px;
+    text-align: right;
+    border-right: 0px;
+    padding-right: 0px;
+}
+.patient-menu .profile-item a {
+	line-height: 16px;
+}
+.patient-menu .profile-item .btn-round {
+	border:solid 1px #ffffff;
+	width: 50px; height: 50px;
+	margin-left: 10px;
+	line-height: 40px;
+	font-size: 18px;
+	margin-top:5px;
+}
+.patient-menu .collapse {display: block;}
+.personal-info {
+	width: 100%;
+	display: inline-grid;
+}
+
+.custom-alert {
+	overflow: hidden;
+}
+.custom-alert .btn {
+	float: right;
+}
+
+.mb-25 {
+	margin-bottom: 25px;
+}
+
+
+
+.pull-right {float: right !important;}
+
+.btn-primary {
+	border-color: #00c5fb;
+    background-color: #00c5fb;
+}
+.btn-primary:hover{background-color: #00b7ed;
+    border-color: #00b7ed;
+}
+
+.day,
+.month,
+.year {
+	padding: 0.375rem 0.75rem;
+	font-weight: 400;
+	line-height: 1.5;
+	color: #495057;
+	background-color: #fff;
+	background-clip: padding-box;
+	border: 1px solid #ced4da;
+	border-radius: 0.25rem;
+	height: 44px;
+}
+
+.day,
+.year {
+	width: 30%;
+}
+
+.month {
+	width: 40%;
+}
+.text-paid {
+	color: #f62d51 !important;
+}     
+.text-created {
+	color: #1db9aa !important;
+}  
+.text-partially {
+	color: #f39c12 !important;
+}   
+
+.badge.paid {
+    background-color: rgba(15, 183, 107,0.12) !important;
+    color: #26af48 !important;
+} 
+.badge.created {
+    background-color: rgba(2, 182, 179,0.12) !important;
+    color: #1db9aa !important;
+}       
+.badge.partially {
+    background-color: rgba(255, 152, 0,0.12) !important;
+    color: #f39c12 !important;
+} 
+
+.btn-group-lg>.btn, .btn-lg {
+    font-size: 1.25rem;
+    line-height: 1.5;
+   
+}
+
+/*Footer*/
+footer {
+	/*background-color: #737373;*/
+}
+footer .row:first-child {
+	justify-content: center;
+    text-align: center;
+    flex-direction: column;
+}
+footer .row:first-child ul {
+	justify-content: center;
+    text-align: center;
+}
+footer .row:first-child ul:last-child {
+    margin-top: 25px;
+}
+footer .row {
+	padding: 1.25em 0;
+    display: flex;
+    
+}
+footer .col-4 {
+	padding-left: 0;
+}
+footer .col-4 ul {
+	justify-content: flex-end;
+}
+footer ul {
+	display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    padding: 0;
+    margin:0;
+    list-style: none;
+}
+footer ul li {
+	padding: 0 5px;
+	height: 18px;
+    line-height: 18px;
+    border-right: 1px solid #fff;
+    font-size: 13px;
+}
+footer ul li:last-child {border-right: 0px; padding-right: 0px;}
+
+footer p {
+	color: #ffffff;
+	font-size: 13px;
+	text-align: right;
+}
+
+
+
+footer ul li a,
+footer ul li a:hover,
+footer ul li a:visited{
+	color: #ffffff;
+	padding: 0 5px 0 0;
+}
+footer ul li:last-child a {padding-right: 0px;}
+
+@media (min-width: 1200px) {
+	.container {
+    	max-width: 1200px;
+	}
+}
+
+.publish-record .record_publish_listing {
+    margin-top: -25px;
+	width: 100%;
+}
+.button-delete {
+    text-align: end!important;
+    padding-right: 35px;
+    padding-top: 10px;
+}

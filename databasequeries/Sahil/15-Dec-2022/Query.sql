@@ -1,0 +1,1 @@
+ALTER TABLE `hospital_information` ADD `channel_no` TEXT NULL AFTER `logo`;

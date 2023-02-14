@@ -1,0 +1,1 @@
+/* trigger when page is ready */

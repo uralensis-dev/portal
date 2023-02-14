@@ -1,0 +1,24 @@
+Code,Description,Type
+P1140," Biopsy Nos,",p
+P1109, Excision / Re-excision,p
+P1102, Enucleation Nos,p
+P1110, Amputation,p
+P1125, Exenteration,p
+P1130, Debridement Nos,p
+P1145, Bone Marrow Aspiration and Biopsy (T-),p
+P1154, Curretage Nos,p
+P1155, Dilatation and Curretage,p
+P1170, Prosthetic Implantation,p
+P1342, Endobronchial Washing (T-),p
+P1420, Transplantation Nos,p
+P2044, Specimen Frozen,p
+P3070, Microscopic Examination of Referred Slides,p
+P3081, Frozen Section,p
+P3086, Immunofluorescent Study,p
+P3105, Cytopathology Review of Slides by Pathologist,p
+P3238, Gross Organ Or Tissue Photography Nos,p
+P3239, Microphotography Nos,p
+P3250, Electron Microscopy Study,p
+P3080, Mohs,p
+P3251, Sentinel Node,p
+P1025, Biopsy Incisional,p
