@@ -155,6 +155,27 @@ if (!(strtolower($this->uri->segment(1)) == 'doctor' && (strtolower($this->uri->
            $(".list-view").removeClass("active");
            $(this).addClass("active");
         });
+        $('#check_all_request').change(function(){
+            var all_br = $(this).prop('checked');
+            $(".bulk_report_generate").prop('checked', all_br);
+        });
+        $('.generate-bulk-reports').click(function(){
+            var radioChecked = $(".bulk_report_generate:checked").length;
+            if(radioChecked > 0){
+                var requestIds = '';
+                $(".bulk_report_generate:checked").each(function() {
+                    requestIds += $(this).val()+ ",";
+                });
+                requestIds = requestIds.replace(/,\s*$/, "");
+                var link = document.createElement('a');
+                link.style.display = "none"; // because Firefox sux
+                document.body.appendChild(link); // because Firefox sux
+                link.href = "<?php echo base_url(); ?>/institute/DownloadRequestZip/"+encodeURIComponent(requestIds);
+                link.target = "_blank";
+                link.click();
+                document.body.removeChild(link); // because Firefox sux
+            }
+        });
          $(document).on("click", '.markedViewed', function(){
             var rid = $(this).attr('data-rid');
             $.ajax({
@@ -3959,14 +3980,17 @@ if (!empty($javascripts)) {
                 fnRowCallback: function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                  $('td', nRow).eq(9).addClass('flag_column');
             },
+            columnDefs: [
+                { targets: 'no-sort', orderable: false }
+            ],
                 fnDrawCallback: function () {
                 if (datatables_render_table === false) {
                     ajax_display_comment_box_hover();
 
                     ajax_add_flag_comments_box();
                     ajax_delete_flag_comments();
-                    generate_bulk_reports();
-                    check_all_checkboxes();
+                    // generate_bulk_reports();
+                    //check_all_checkboxes();
                     ajax_change_flag_status();
                     datatables_render_table = true;
                 }

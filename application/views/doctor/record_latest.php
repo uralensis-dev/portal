@@ -483,6 +483,7 @@ if ($this->session->flashdata('record_updated') != '') {
                                 <i class="fa fa-download"></i>
                                 </a><input type="hidden" name="bulk_report_ids">
                             </th> -->
+                            <th class="no-sort"><input type="checkbox" name="check_all" id="check_all_request"><a href="javascript:;" class="generate-bulk-reports" data-bulkurl="<?php echo base_url('index.php/institute/generateBulkReports'); ?>"><img style="min-width: 15px; width: 25px; margin-left: 5px;" src="<?php echo base_url('assets/img/download-1.png'); ?>"></a><input type="hidden" name="bulk_report_ids"></th>
                             <th>Lab No.</th>
                             <th>Patient</th>
                             <th>DOB</th>

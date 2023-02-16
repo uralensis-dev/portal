@@ -3274,7 +3274,7 @@ Class Doctor extends CI_Controller {
 				$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_green.png') . '">';
 			}
 			$flag_content .= '</div>';
-			$flag_content .= '<ul class="report_flags list-unstyled list-inline record-latest-flags">';
+			$flag_content .= '<ul class="report_flags list-unstyled list-inline record-latest-flags hide">';
 			$active = '';
 			if ($record->flag_status === 'flag_green') {
 				$active = 'flag_active';
@@ -3490,6 +3490,7 @@ Class Doctor extends CI_Controller {
 
 			$row = array();
 			//$row[] = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
+			$row[] = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
 			$row[] = $ul_and_track;
 			$row[] = $full_name;
 			$row[] = $dob_nd_nhs;

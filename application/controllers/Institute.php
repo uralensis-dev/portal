@@ -28,6 +28,7 @@ class Institute extends CI_Controller {
 		$this->load->helper("file");
 		$this->load->library('email');
 		$this->load->library('Mybreadcrumb');
+		$this->load->library('zip');
 
 		// $this->load->library('word');
 		track_user_activity();
@@ -11906,6 +11907,22 @@ class Institute extends CI_Controller {
 			$edit_req_data['is_viewed'] = 1;
 			$this->db->where('uralensis_request_id', $this->input->post('changeId'));
 			$this->db->update('request', $edit_req_data);
+		}
+	}
+
+	public function DownloadRequestZip($requestIds = '') {
+		$requestIds = urldecode($requestIds);
+		if ($requestIds != '') {
+			$requestInfo = explode(",", $requestIds);
+			foreach($requestInfo as $key => $rid){
+				$edit_req_data['is_viewed'] = 1;
+				$this->db->where('uralensis_request_id', $rid);
+				$this->db->update('request', $edit_req_data);
+				$filepath1 = FCPATH.'/uploads/reports_pdf/'.$rid."_".date('Y').".pdf";
+				$this->zip->read_file($filepath1);
+			}
+			$filename = "reports_".time().".zip";
+            $this->zip->download($filename);
 		}
 	}
 }

@@ -265,7 +265,7 @@ if (!empty($query)) {
             <table id="display_new_records" class="table table-striped">
                 <thead>
                     <tr>
-                        <th><input type="checkbox" name="check_all"><a href="javascript:;" class="generate-bulk-reports" data-bulkurl="<?php echo base_url('index.php/institute/generateBulkReports'); ?>"><img style="min-width: 15px; width: 25px; margin-left: 5px;" src="<?php echo base_url('assets/img/download-1.png'); ?>"></a><input type="hidden" name="bulk_report_ids"></th>
+                        <th><input type="checkbox" name="check_all" id="check_all_request"><a href="javascript:;" class="generate-bulk-reports" data-bulkurl="<?php echo base_url('index.php/institute/generateBulkReports'); ?>"><img style="min-width: 15px; width: 25px; margin-left: 5px;" src="<?php echo base_url('assets/img/download-1.png'); ?>"></a><input type="hidden" name="bulk_report_ids"></th>
                         <th>UL No.<br />Track No.</th>
                         <th>Client<br />Clinic</th>
                         <th>Batch<br />PCI No.</th>
@@ -332,10 +332,33 @@ $(document).ready(function() {
         },
         "columnDefs": [
             {
-                "targets": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                "targets": [1, 2, 3, 4, 5, 6, 7, 8],
                 "orderable": false
             }
-        ]
+        ], 
+    });
+
+    $('#check_all_request').change(function(){
+        var all_br = $(this).prop('checked');
+        $(".bulk_report_generate").prop('checked', all_br);
+    });
+
+    $('.generate-bulk-reports').click(function(){
+        var radioChecked = $(".bulk_report_generate:checked").length;
+        if(radioChecked > 0){
+            var requestIds = '';
+            $(".bulk_report_generate:checked").each(function() {
+                requestIds += $(this).val()+ ",";
+            });
+            requestIds = requestIds.replace(/,\s*$/, "");
+            var link = document.createElement('a');
+            link.style.display = "none"; // because Firefox sux
+            document.body.appendChild(link); // because Firefox sux
+            link.href = "<?php echo base_url(); ?>/institute/DownloadRequestZip/"+encodeURIComponent(requestIds);
+            link.target = "_blank";
+            link.click();
+            document.body.removeChild(link); // because Firefox sux
+        }
     });
 
 });
