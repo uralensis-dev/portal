@@ -3426,7 +3426,9 @@ Class Doctor extends CI_Controller {
 				$supply_record = '<a data-toggle="tooltip" data-placement="top" title="Supplementary Report Requested For This Record ' . $record->serial_number . '" href="javascript:;"><img src="' . base_url('assets/img/requested.png') . '"></a>';
 			}
 			$pdf_doc = '';
-			$pdf_doc = '<a  class="markedViewed" data-rid="' . $record->uralensis_request_id . '" target="_blank" href="' . site_url() . "/uploads/reports_pdf/" . $record->uralensis_request_id . "_" . date('Y') . ".pdf" . '" download><img src="' . base_url("assets/img/download-1.png") . '"></a>';
+			if(file_exists("uploads/reports_pdf/".$record->uralensis_request_id . "_" . date('Y') . ".pdf")){
+				$pdf_doc = '<a  class="markedViewed" data-rid="' . $record->uralensis_request_id . '" target="_blank" href="' . site_url() . "/uploads/reports_pdf/" . $record->uralensis_request_id . "_" . date('Y') . ".pdf" . '" download><img src="' . base_url("assets/img/download-1.png") . '"></a>';
+			}
 			$publish_status = 'Not Published';
 			if ($record->specimen_publish_status == 1) {
 				$publish_status = '<button title="Unpublish Record" class="record_id_unpublish btn btn-link" data-recordserial="' . $record->serial_number . '" data-unpublishrecordid="' . site_url() . "/doctor/unpublish_record/" . $record->uralensis_request_id . '">
@@ -3490,7 +3492,11 @@ Class Doctor extends CI_Controller {
 
 			$row = array();
 			//$row[] = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
-			$row[] = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
+			$pdfCheckboxHtml = '';
+			if(file_exists("uploads/reports_pdf/".$record->uralensis_request_id . "_" . date('Y') . ".pdf")){
+				$pdfCheckboxHtml = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
+			}
+			$row[] = $pdfCheckboxHtml;
 			$row[] = $ul_and_track;
 			$row[] = $full_name;
 			$row[] = $dob_nd_nhs;

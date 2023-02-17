@@ -1160,7 +1160,11 @@ class Institute extends CI_Controller {
 			}
 			$hospital_initial = '<a class="hospital_initials" data-toggle="tooltip" data-placement="top" title="' . $this->ion_auth->group($record->hospital_group_id)->row()->description . '" href="javascript:;" >' . $f_initial . ' ' . $l_initial . '</a>';
 			$row = array();
-			$row[] = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
+			$pdfCheckboxHtml = '';
+			if(file_exists("uploads/reports_pdf/".$record->uralensis_request_id . "_" . date('Y') . ".pdf")){
+				$pdfCheckboxHtml = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
+			}
+			$row[] = $pdfCheckboxHtml;
 			$row[] = $record->serial_number . '<br />' . $record->ura_barcode_no;
 			$row[] = $hospital_initial;
 			$row[] = $batch_no . '<br>' . $record->pci_number;
@@ -1172,7 +1176,13 @@ class Institute extends CI_Controller {
 			$row[] = $assign_status;
 			// $row[] = $publish_status;
 			// $row[] = $publish_status_download;
-			$row[] = '<a href="' . site_url() . 'uploads/reports_pdf/' . $record->uralensis_request_id . "_" . date("Y") . ".pdf" . '" download><img src="' . base_url('assets/img/adobe.png') . '" />&nbsp; Docs</a> &nbsp; <a class="markedViewed" data-rid="' . $record->uralensis_request_id . '" target="_blank" href="' . site_url() . "/uploads/reports_pdf/" . $record->uralensis_request_id . "_" . date('Y') . ".pdf" . '" download><img src="' . base_url("assets/img/download-1.png") . '"></a>';
+			$pdfHtml = '<a href="' . site_url() . 'uploads/reports_pdf/' . $record->uralensis_request_id . "_" . date("Y") . ".pdf" . '" download><img src="' . base_url('assets/img/adobe.png') . '" />&nbsp; Docs</a> &nbsp; ';
+			
+			if(file_exists("uploads/reports_pdf/".$record->uralensis_request_id . "_" . date('Y') . ".pdf")){
+				$pdfHtml .= '<a class="markedViewed" data-rid="' . $record->uralensis_request_id . '" target="_blank" href="' . site_url() . "/uploads/reports_pdf/" . $record->uralensis_request_id . "_" . date('Y') . ".pdf" . '" download><img src="' . base_url("assets/img/download-1.png") . '"></a>';
+			}
+			$row[] = $pdfHtml; 
+			
 			$data[] = $row;
 			$flag_count++;
 		}

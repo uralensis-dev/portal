@@ -625,9 +625,9 @@ if (empty($session_color)) {
                             <th class="text-align:center">
                                 <img data-toggle="tooltip" title="Un-Published" src="<?php echo base_url('assets/icons/UnPublish.png'); ?>">
                             </th>
-                            <th>Clinician</th>
+                           
 
-                            <th>Status</th>
+                            <!-- <th>Status</th> -->
                             <!-- <th class="text-right sorting_disabled" rowspan="1" colspan="1" style="width: 31px; padding-right: 15px !important">
                                 <img data-toggle="tooltip" title="" src="<?php echo base_url('assets/icons/Actions-Blue.png'); ?>" class="img-responsive action_th_icon" data-original-title="Actions">
                             </th> -->
@@ -636,6 +636,7 @@ if (empty($session_color)) {
                             </th> -->
 
                             <th class="">PDF</th>
+                            <th>Clinician</th>
                         </tr>
                     </thead>
                 </table>

@@ -303,10 +303,10 @@ $(document).ready(function() {
             },
         });
     });
-    setTimeout(() => {
-        $('#display_new_records').DataTable().destroy();
-        $('#display_new_records').DataTable();
-    }, 500);
+    // setTimeout(() => {
+    //     $('#display_new_records').DataTable().destroy();
+    //     $('#display_new_records').DataTable();
+    // }, 500);
     var type = "<?=$type;?>";
      var viewType = "<?=$viewType;?>";
     var url = window.location.href;
@@ -332,7 +332,7 @@ $(document).ready(function() {
         },
         "columnDefs": [
             {
-                "targets": [1, 2, 3, 4, 5, 6, 7, 8],
+                "targets": [0],
                 "orderable": false
             }
         ], 
