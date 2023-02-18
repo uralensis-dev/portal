@@ -1018,7 +1018,7 @@ span.icon-try {
                   <td><?php echo $row->f_name; ?> <?php echo $row->sur_name; ?><br /><?php echo $age; ?></td>
                   <td><?php echo $row->speciman_no ?></td>
                  <td class="text-center">
-                    <?php if($row->assign_status==1){?>
+                    <?php if($row->request_assign_status==1){?>
                       <a style="color:#000;" href="javascript:;" id="show_comments_list" class="show_comments_record_list" data-recordid="<?php echo $row->uralensis_request_id; ?>" data-modalid="<?php echo $flag_count; ?>">
                         <!-- <i class="lnr lnr-file-empty" style=""></i> -->
 
