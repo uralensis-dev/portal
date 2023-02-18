@@ -4245,13 +4245,14 @@ if (!empty($javascripts)) {
                 }
 
                 aData = aData.map(v => v.trim());
+                console.log(aData);
                 if (tat5 && aData[14] <= 5) {
                     return true;
-                } else if (tat10 && aData[14] <= 10) {
+                } else if (tat10 && aData[10] <= 10) {
                     return true;
-                } else if (tat20 && aData[14] > 10 && aData[14] <= 20) {
+                } else if (tat20 && aData[10] > 10 && aData[10] <= 20) {
                     return true;
-                } else if (tat30 && aData[14] > 20) {
+                } else if (tat30 && aData[10] > 20) {
                     return true;
                 } else if (tat_all) {
                     return true;
@@ -4335,19 +4336,19 @@ if (!empty($javascripts)) {
                 aData = aData.map(v => v.trim());
 
 
-                if (blue && aData[7] == 'flag_blue') {
+                if (blue && aData[12] == 'flag_blue') {
                     return true;
                 }
-                if (green && aData[7] == 'flag_green') {
+                if (green && aData[12] == 'flag_green') {
                     return true;
                 }
-                if (yellow && aData[7] == 'flag_yellow') {
+                if (yellow && aData[12] == 'flag_yellow') {
                     return true;
                 }
-                if (black && aData[7] == 'flag_black') {
+                if (black && aData[12] == 'flag_black') {
                     return true;
                 }
-                if (red && aData[7] == 'flag_red') {
+                if (red && aData[12] == 'flag_red') {
                     return true;
                 }
                 if (all) {
@@ -4375,11 +4376,11 @@ if (!empty($javascripts)) {
                     $("#report_clear").parent("span").show();
                 }
 
-                if (report_urgent && aData[18] == 'Urgent') {
+                if (report_urgent && aData[48] == 'Urgent') {
                     return true;
-                } else if (report_routine && aData[18] == 'Routine') {
+                } else if (report_routine && aData[14] == 'Routine') {
                     return true;
-                } else if (report_2ww && aData[18] == '2WW') {
+                } else if (report_2ww && aData[14] == '2WW') {
                     return true;
                 }else if (report_clear) {
                     return true;

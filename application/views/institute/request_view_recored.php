@@ -502,7 +502,7 @@ span.icon-try {
       <?php } ?>
 
     <div class="report_listing" id="report-list-table" >
-      <div class="col-md-12" style="display:none">
+      <div class="col-md-12">
         <!-- <div class="flag_message"></div> -->
         <?php echo form_open("admin/display_all", array('id' => 'assign_doc_form')); ?>
         <div class="col-sm-2 col-md-2" style="padding-left: 0;">  
