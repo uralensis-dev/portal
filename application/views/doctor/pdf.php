@@ -177,6 +177,7 @@ if(isset($template)){
 }
 require_once(APPPATH . 'helpers/tcpdf/tcpdf.php');
 
+if (!class_exists('MYPDF')) {
 class MYPDF extends TCPDF {
 
     public function Header() {
@@ -320,6 +321,7 @@ EOD;
 		$this->writeHTML($footerText,true, false, true, false, '');
     }
 
+}
 }
 
 $pdf = new MYPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
@@ -588,3 +590,4 @@ if($query1[0]->actionType == 'regenerate'){
     $file_name1 =  $StoreLocation.$request_id."_".date('Y').'.pdf';
     $pdf->Output($file_name1, 'F');
 }
+unset($pdf);

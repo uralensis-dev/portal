@@ -1848,7 +1848,7 @@ Class Doctor extends CI_Controller {
 	 * @param int $id
 	 * @return void
 	 */
-	public function generate_report($id, $action = '') {
+	public function generate_report($id, $action = '', $actionType='') {
 		if (!$this->ion_auth->logged_in()) {
 			redirect('auth/login', 'refresh');
 		}
@@ -1868,7 +1868,9 @@ Class Doctor extends CI_Controller {
 			$data4['query4'] = $this->Doctor_model->get_additional_work($id);
 			$data5['query5'] = $this->Doctor_model->get_hospital_info($id);
 			$data1['query1'][0]->actionType = ($this->input->post('actionType') && $this->input->post('actionType') == 'regenerate') ? $this->input->post('actionType') : "";
-
+			if($actionType != '' && $actionType == 'regenerate'){
+				$data1['query1'][0]->actionType = $actionType;
+			}
 			$req_data = $this->db->select('lab_processing_id')->get_where('request', ['uralensis_request_id' => $data1['query1'][0]->uralensis_request_id])->row_array();
 
 			/*$templateArr=[];
@@ -6132,6 +6134,9 @@ Class Doctor extends CI_Controller {
 	 * @return void
 	 */
 	public function publish_bulk_reports_authrization() {
+// 		ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 		if (!$this->ion_auth->logged_in()) {
 			redirect('auth/login', 'refresh');
 		}
@@ -6163,6 +6168,7 @@ Class Doctor extends CI_Controller {
 						'mdt_case_status' => 'not_for_mdt',
 					);
 					foreach ($request_id as $record) {
+						$this->generate_report($record, '',"regenerate");
 						$this->db->where('uralensis_request_id', $record);
 						$this->db->update('request', $mdt_data);
 						$this->db->where('uralensis_request_id', $record);
