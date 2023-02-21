@@ -3486,7 +3486,7 @@ if(!empty($javascripts)){
             display: function (item) {
                 return item.first_name + ' ' + item.surname;
             },
-            limit: 30,
+            limit: 300,
             templates: {
                 suggestion: function (item) {
                     return '<div><a href="<?= base_url(SEARCH_RECORD_LINK_PATH); ?>' + item.record_id + '">' + item.serial_number + ' --- ' + item.first_name + ' ' + item.surname + '</a></div>';
@@ -3499,6 +3499,9 @@ if(!empty($javascripts)){
                 },
             }
         });
+        $('.tg-searchrecord input.typeahead').on('typeahead:selected', function(evt, item) {
+            window.location.href = "<?= base_url(SEARCH_RECORD_LINK_PATH); ?>" + item.record_id;
+        })
 
 
         var ap_record_suggestions = new Bloodhound({
