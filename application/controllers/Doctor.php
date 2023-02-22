@@ -3555,6 +3555,358 @@ Class Doctor extends CI_Controller {
 		echo json_encode($output);
 	}
 
+
+	public function display_published_reports_ajax_processing_dr() {
+		$url_year = '2022';
+		$url_type = '';
+		$viewType = 2;
+		if (!empty($_POST['year']) && !empty($_POST['type'])) {
+			$url_year = $_POST['year'];
+			$url_type = $_POST['type'];
+		}
+		if (!empty($_POST['viewtype'])) {
+			$viewType = $_POST['viewtype'];
+		}
+		$flag_type = '';
+		if (!empty($_POST['flag_type'])) {
+			$flag_type = $_POST['flag_type'];
+		}
+		$sort_authorize = '';
+		if (!empty($_POST['sort_authorize'])) {
+			$sort_authorize = $_POST['sort_authorize'];
+		}
+		$urgency_type = '';
+		if (!empty($_POST['urgency_type'])) {
+			$urgency_type = $_POST['urgency_type'];
+		}
+		$row_color_code = '';
+		if (!empty($_POST['row_color_code'])) {
+			$row_color_code = $_POST['row_color_code'];
+		}
+
+		$list = $this->Doctor_model->display_published_record_dr($url_year, $url_type, $flag_type, $sort_authorize, $urgency_type, $row_color_code, $viewType);
+
+		$data = array();
+		$flag_count = 11;
+		$row_count = 0;
+		foreach ($list as $record) {
+			$groupType = $this->ion_auth->get_users_main_groups()->row()->group_type;
+			$row_code = '';
+			if (!empty($record->request_code_status) && $record->request_code_status === 'new') {
+				$row_code = 'row_yellow';
+			} else if (!empty($record->request_code_status) && $record->request_code_status === 'rec_by_lab') {
+				$row_code = 'row_orange';
+			} else if (!empty($record->request_code_status) && $record->request_code_status === 'pci_added') {
+				$row_code = 'row_purple';
+			} else if (!empty($record->request_code_status) && $record->request_code_status === 'assign_doctor') {
+				$row_code = 'row_green';
+			} else if (!empty($record->request_code_status) && $record->request_code_status === 'micro_add') {
+				$row_code = 'row_skyblue';
+			} else if (!empty($record->request_code_status) && $record->request_code_status === 'add_to_authorize') {
+				$row_code = 'row_blue';
+			} else if (!empty($record->request_code_status) && $record->request_code_status === 'furtherwork_add') {
+				$row_code = 'row_brown';
+			} else if (!empty($record->request_code_status) && $record->request_code_status === 'record_publish') {
+				$row_code = 'row_white';
+			}
+			$flag_content = '<div class="hover_flags">';
+			$flag_content .= '<div class="flag_images">';
+			if ($record->flag_status === 'flag_red') {
+				$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as urgent." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_red.png') . '">';
+			} else if ($record->flag_status === 'flag_yellow') {
+				$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for typing." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_yellow.png') . '">';
+			} else if ($record->flag_status === 'flag_blue') {
+				$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for Pre-Authorization." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_blue.png') . '">';
+			} else if ($record->flag_status === 'flag_black') {
+				$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as further work." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_black.png') . '">';
+			} else if ($record->flag_status === 'flag_gray') {
+				$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as awaiting reviews." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_gray.png') . '">';
+			} else {
+				$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." class="report_selected_flag" src="' . base_url('assets/img/flag_lg_green.png') . '">';
+			}
+			$flag_content .= '</div>';
+			$flag_content .= '<ul class="report_flags list-unstyled list-inline record-latest-flags hide">';
+			$active = '';
+			if ($record->flag_status === 'flag_green') {
+				$active = 'flag_active';
+			}
+			$flag_content .= '<li class="' . $active . '">';
+			$flag_content .= '<a href="javascript:;" data-flag="flag_green" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+			$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as released." src="' . base_url('assets/img/flag_green.png') . '">';
+			$flag_content .= '</a>';
+			$flag_content .= '</li>';
+			$active = '';
+			if ($record->flag_status === 'flag_red') {
+				$active = 'flag_active';
+			}
+			$flag_content .= '<li class="' . $active . '">';
+			$flag_content .= '<a href="javascript:;" data-flag="flag_red" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+			$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked as urgent." src="' . base_url('assets/img/flag_red.png') . '">';
+			$flag_content .= '</a>';
+			$flag_content .= '</li>';
+			$active = '';
+			if ($record->flag_status === 'flag_yellow') {
+				$active = 'flag_active';
+			}
+			$flag_content .= '<li class="' . $active . '">';
+			$flag_content .= '<a href="javascript:;" data-flag="flag_yellow" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+			$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for typing." src="' . base_url('assets/img/flag_yellow.png') . '">';
+			$flag_content .= '</a>';
+			$flag_content .= '</li>';
+			$active = '';
+			if ($record->flag_status === 'flag_blue') {
+				$active = 'flag_active';
+			}
+			$flag_content .= '<li class="' . $active . '">';
+			$flag_content .= '<a href="javascript:;" data-flag="flag_blue" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+			$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked for pre authorization." src="' . base_url('assets/img/flag_blue.png') . '">';
+			$flag_content .= '</a>';
+			$flag_content .= '</li>';
+			$active = '';
+			if ($record->flag_status === 'flag_black') {
+				$active = 'flag_active';
+			}
+			$flag_content .= '<li class="' . $active . '">';
+			$flag_content .= '<a href="javascript:;" data-flag="flag_black" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+			$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked further work." src="' . base_url('assets/img/flag_black.png') . '">';
+			$flag_content .= '</a>';
+			$flag_content .= '</li>';
+			$active = '';
+			if ($record->flag_status === 'flag_gray') {
+				$active = 'flag_active';
+			}
+			$flag_content .= '<li class="' . $active . '">';
+			$flag_content .= '<a href="javascript:;" data-flag="flag_gray" data-serial="' . $record->serial_number . '" data-recordid="' . $record->uralensis_request_id . '" class="flag_change">';
+			$flag_content .= '<img data-toggle="tooltip" data-placement="top" title="This case marked awaiting reviews." src="' . base_url('assets/img/flag_gray.png') . '">';
+			$flag_content .= '</a>';
+			$flag_content .= '</li>';
+			$flag_content .= '</ul>';
+			$flag_content .= '</div>';
+			$add_comments = '';
+			$show_comments = '';
+			$add_comments .= '<div class="comments_icon">';
+			$add_comments .= '<a style="color:#000;" href="javascript:;" id="display_comment_box" class="display_comment_box" data-recordid="' . $record->uralensis_request_id . '" data-modalid="' . $flag_count . '">';
+
+			// Modal comment get here
+			$user_id = $this->ion_auth->user()->row()->id;
+			$whereArr = ['record_id' => $record->uralensis_request_id, 'user_id' => $user_id, 'module_id' => 1];
+			$comment = $this->db->get_where("section_comments", $whereArr)->row()->description;
+			if (!empty($comment)) {
+				$class = "color: #70cafb;background: #cef4fe;padding: 5px;border-radius: 50%;";
+			} else {
+				$class = "";
+			}
+
+			$add_comments .= '<i class="lnr lnr-bubble" style="font-size:18px;font-weight:bold;' . $class . '"></i>';
+			$add_comments .= '</a>';
+			$add_comments .= '</div>';
+			$show_comments .= '<div class="comments_icon">';
+			$show_comments .= '<a style="color:#000;" href="javascript:;" id="show_comments_list" class="show_comments_list_published" data-recordid="' . $record->uralensis_request_id . '" data-modalid="' . $flag_count . '">';
+			$show_comments .= '<i class="lnr lnr-file-empty" style="font-size:18px;font-weight:bold;"></i>';
+			$show_comments .= '</a>';
+			$show_comments .= '</div>';
+			$add_comments .= '<div id="flag_comment_model-' . $flag_count . '" class="flag_comment_model modal fade" role="dialog" data-backdrop="static" data-keyboard="false">';
+			$add_comments .= '<div class="modal-dialog">';
+			$add_comments .= '<div class="modal-content">';
+			$add_comments .= '<div class="modal-header">';
+			$add_comments .= '<button type="button" class="close" data-dismiss="modal">&times;</button>';
+			$add_comments .= '<h4 class="modal-title">Flag Reason Comment</h4>';
+			$add_comments .= '</div>';
+			$add_comments .= '<div class="modal-body">';
+			$add_comments .= '<div class="flag_msg"></div>';
+			$add_comments .= '<form class="form flag_comments" id="flag_comments_form_' . $flag_count . '">';
+			$add_comments .= '<div class="form-group">';
+
+			$add_comments .= '<textarea name="flag_comment" id="flag_comment" class="form-control flag_comment">' . $comment . '</textarea>';
+			$add_comments .= '</div>';
+			$add_comments .= '<div class="form-group">';
+			$add_comments .= '<hr>';
+			$add_comments .= '<input type="hidden" name="data_section" value="1" />';
+			$add_comments .= '<input type="hidden" name="record_id" value="' . $record->uralensis_request_id . '">';
+			$add_comments .= '<a class="btn btn-primary flag_comments_save" id="flag_comments_save" href="javascript:;">Save Comments</a>';
+			$add_comments .= '</div>';
+			$add_comments .= '</form>';
+			$add_comments .= '</div>';
+			$add_comments .= '</div>';
+			$add_comments .= '</div>';
+			$add_comments .= '</div>';
+			$show_comments .= '<div id="display_comments_list-' . $flag_count . '" class="modal fade display_comments_list" role="dialog" data-backdrop="static" data-keyboard="false">';
+			$show_comments .= '<div class="modal-dialog">';
+			$show_comments .= '<div class="modal-content">';
+			$show_comments .= '<div class="modal-header">';
+			$show_comments .= '<button type="button" class="close" data-dismiss="modal">&times;</button>';
+			$show_comments .= '<h4 class="modal-title">Flag Comments</h4>';
+			$show_comments .= '</div>';
+			$show_comments .= '<div class="modal-body">';
+			$show_comments .= '<div class="display_flag_msg"></div>';
+			$show_comments .= '<div class="flag_comments_dynamic_data"></div>';
+			$show_comments .= '</div>';
+			$show_comments .= '<div class="modal-footer">';
+			$show_comments .= '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>';
+			$show_comments .= '</div>';
+			$show_comments .= '</div>';
+			$show_comments .= '</div>';
+			$show_comments .= '</div>';
+			//$edit_button = '<a href="javascript:;" class="edit-icon" style="float: none !important;"><i class="fa fa-pencil"></i></a>';
+
+			//$hl7Action = '<a href="javascript:void(0);" data-pid="'. $record->patient_id .'" class="edit-icon read_hl7" title="View HL7 Data"><i class="fa fa-file-code-o"></i></a>';
+			//$hl7Action .= '<a href="javascript:void(0);" data-pid="'. $record->patient_id .'" class="edit-icon download_hl7" title="Download HL7 File"><i class="fa fa-download"></i></a>';
+			$hl7Action = "Published";
+			$dob_nd_nhs = '<br>' . $record->nhs_number;
+			if (!empty($record->dob)) {
+				$dob_nd_nhs = $record->nhs_number . '<br>' . date('d-m-Y', strtotime($record->dob));
+			}
+			$request_time = '';
+			if (!empty($record->request_datetime)) {
+				$request_time = date('d-m-Y', strtotime($record->request_datetime));
+			}
+			$rec_by_lab_date = '';
+			if (!empty($record->date_received_bylab)) {
+				$rec_by_lab_date = date('d-m-Y', strtotime($record->date_received_bylab));
+			}
+			$publish_date = '';
+			if (!empty($record->publish_datetime)) {
+				$publish_date = date('d-m-Y', strtotime($record->publish_datetime));
+			}
+			$record_published = '';
+			if ($record->specimen_update_status == 1 && $record->specimen_publish_status == 1) {
+				$record_published = '<a data-toggle="tooltip" data-placement="top" title="' . $record->serial_number . ' Record Has Been Published Or Completed." href="' . site_url() . '/doctor/doctor_record_detail_new/' . $record->uralensis_request_id . '"><img src="' . base_url('assets/img/completed.png') . '"></a>';
+			}
+			$supply_record = '';
+			if ($record->supplementary_report_status == 1) {
+				$supply_record = '<a data-toggle="tooltip" data-placement="top" title="Supplementary Report Requested For This Record ' . $record->serial_number . '" href="javascript:;"><img src="' . base_url('assets/img/requested.png') . '"></a>';
+			}
+			$pdf_doc = '';
+			if(file_exists("uploads/reports_pdf/".$record->uralensis_request_id . "_" . date('Y') . ".pdf")){
+				$pdf_doc = '<a  class="markedViewed" data-rid="' . $record->uralensis_request_id . '" target="_blank" href="' . site_url() . "/uploads/reports_pdf/" . $record->uralensis_request_id . "_" . date('Y') . ".pdf" . '" download><img src="' . base_url("assets/img/download-1.png") . '"></a>';
+			}
+			$publish_status = 'Not Published';
+			if ($record->specimen_publish_status == 1) {
+				$publish_status = '<button title="Unpublish Record" class="record_id_unpublish btn btn-link" data-recordserial="' . $record->serial_number . '" data-unpublishrecordid="' . site_url() . "/doctor/unpublish_record/" . $record->uralensis_request_id . '">
+                                    <img src="' . base_url('assets/icons/UnPublishBlack.png') . '" class="pub_unpub" />
+
+                                    </button>';
+			}
+			$f_initial = '';
+			$l_initial = '';
+			if (!empty($this->ion_auth->group($record->hospital_group_id)->row()->first_initial)) {
+				$f_initial = $this->ion_auth->group($record->hospital_group_id)->row()->first_initial;
+			}
+			if (!empty($this->ion_auth->group($record->hospital_group_id)->row()->last_initial)) {
+				$l_initial = $this->ion_auth->group($record->hospital_group_id)->row()->last_initial;
+			}
+			$urgency_class = '';
+			$urgency_title = '';
+			if (!empty($record->report_urgency) && $record->report_urgency === 'Urgent') {
+				$urgency_class = 'urgent-wb';
+				$urgency_title = 'Urgent';
+			} else if (!empty($record->report_urgency) && $record->report_urgency === '2WW') {
+				$urgency_class = 'two_ww';
+				$urgency_title = '2WW';
+			} else {
+				$urgency_class = 'routine';
+				$urgency_title = 'Routine';
+			}
+			$full_name = '';
+			if (!empty($record->f_name) || !empty($record->sur_name)) {
+				$full_name = $record->f_name . '<br>' . $record->sur_name;
+			}
+			$ul_and_track = '';
+			if (!empty($record->serial_number) || !empty($record->ura_barcode_no)) {
+				$ul_and_track = $record->ura_barcode_no;
+			}
+			$lab_and_lab_rec_date = '';
+			if (!empty($record->lab_number) || !empty($rec_by_lab_date)) {
+				$lab_and_lab_rec_date = $record->lab_number . '<br>' . $rec_by_lab_date;
+			}
+			$batch_no = '';
+			if (!empty($record->record_batch_id)) {
+				$batch_no = $record->record_batch_id;
+			}
+
+			// Check patient type here
+			if (empty($record->medicare_card_no)) {
+				$medicare_card_no = "<span style='font-weight:bold;'>Private</span>";
+				// Billing section here
+				if ($record->payment_status == 1) {
+					$checked = "checked";
+				} else {
+					$checked = '';
+				}
+
+				$billing = 'Published';
+
+			} else {
+				$medicare_card_no = "<span style='font-weight:bold;'>Public</span>";
+				$billing = "Published";
+			}
+
+			$row = array();
+			//$row[] = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
+			$pdfCheckboxHtml = '';
+			if(file_exists("uploads/reports_pdf/".$record->uralensis_request_id . "_" . date('Y') . ".pdf")){
+				$pdfCheckboxHtml = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
+			}
+			$row[] = $pdfCheckboxHtml;
+			$row[] = $ul_and_track;
+			$row[] = $full_name;
+			$row[] = $dob_nd_nhs;
+			// $row[] = $batch_no . '<br>' . $record->pci_number;
+			// $row[] = $lab_and_lab_rec_date;
+			$row[] = '<a class="hospital_initials" data-toggle="tooltip" data-placement="top" title="' . $this->ion_auth->group($record->hospital_group_id)->row()->description . '" href="javascript:;" >' . $f_initial . '' . $l_initial . '</a>';
+			
+			$row[] = uralensisGetUsername($record->dermatological_surgeon, 'fullname');
+			
+			$row[] = '<div class="' . $urgency_class . '" data-toggle="tooltip" data-placement="top" title="' . $urgency_title . '" style="font-size:18px;"></div>';
+			// $row[] = $record->speciman_no;
+
+			$row[] = $publish_date;
+			$row[] = $record_published;
+			$row[] = $add_comments;
+			$row[] = $show_comments;
+			$row[] = $flag_content;
+
+			// $row[] = $supply_record;
+			// $row[] = $pdf_doc;
+			// print_r($groupType); die;
+			if ($groupType == "L") {
+				$row[] = $publish_status;
+			}
+
+			$row[] = $pdf_doc;
+
+			
+
+			// $row[] = $record->added_by;
+			//$row[] = '<a href="" target="_blank"><img src="https://portal.pathhub.live/assets/img/pdf.png" title="Pdf View"></a>';
+
+			if ($groupType == "L") {
+				$row[] = $pdf_doc;
+			} elseif ($groupType == 'H') {
+				$row[] = $billing;
+			}
+
+			// $row[] = $record->added_by;
+			if ($groupType != "L" AND $groupType != "H") {
+				$row[] = $edit_button . $hl7Action;
+			}
+
+			$row[] = '<p style="display:none;">' . $row_code . '</p>';
+			$row[] = '<p style="display:none;">' . $record->flag_status . '</p>';
+			$data[] = $row;
+			$flag_count++;
+			$row_count++;
+		}
+		// $this->Doctor_model->record_count_all()
+		$output = array(
+			"draw" => $_POST['draw'],
+			"recordsTotal" => intval($row_count),
+			"recordsFiltered" => $this->Doctor_model->record_count_filtered_dr($url_year, $url_type, $flag_type, $sort_authorize, $urgency_type, $row_color_code, $viewType),
+			"data" => $data,
+		);
+		echo json_encode($output);
+	}
+
 	/**
 	 * View PDF Before Publish Report
 	 *

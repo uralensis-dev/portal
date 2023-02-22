@@ -55,6 +55,19 @@
         left: 25px;
         padding: 0;
     }
+	
+	td a.hospital_initials {
+    display: block;
+    width: 30px;
+    height: 30px;
+    background: #1b75cd;
+    color: #ffffff;
+    text-align: center;
+    border-radius: 50%;
+    line-height: 30px;
+    font-size: 11px;
+    letter-spacing: -1px;
+}
 </style>
 <div class="container-fluid">
     <div class="row">
@@ -75,7 +88,7 @@
                 </ol>
 
             </div>
-            <div class="tg-rightarea hide">
+            <div class="tg-rightarea">
                 <div class="tg-haslayout">
                     <div class="row">
                         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 nopadding-right">
@@ -139,7 +152,7 @@
                             </div>
                         </li>
 
-                        <li class="tg-flagcolor hide" style="padding: 3px 8px">
+                        <li class="tg-flagcolor" style="padding: 3px 8px">
                             <div class="tg-checkboxgroup tg-checkboxgroupvtwo flags_check">
                                 <?php
 if ($this->session->userdata('color_code') !== '') {
@@ -220,9 +233,10 @@ if ($this->session->userdata('color_code') !== '') {
                             <button type="submit" class="btn btn-default adv-search" data-toggle="collapse" data-target="#collapse_adv_search"><i class="fa fa-cog"></i></button>
                         </li> -->
                         <li class="">
+                        <a href="<?php echo base_url(); ?>institute/reports/published/2" class="btn btn-success customBtn">New</a>
                             <a href="<?php echo base_url(); ?>institute/reports/published/1" class="btn btn-success customBtn">Viewed</a>
-                            <a href="<?php echo base_url(); ?>institute/reports/published/2" class="btn btn-success customBtn">Notviewed</a>
-                            <a href="<?php echo base_url(); ?>institute/reports/published/3" class="btn btn-success customBtn">View All</a>
+                            
+                            <a href="<?php echo base_url(); ?>institute/reports/published/3" class="btn btn-success customBtn">All</a>
                         </li>
                         <li class="hide tg-statusbar tg-flagcolor custome-flagcolors pull-right nobefore search_li" style="padding: 0">
                             <div class="input-group">
@@ -266,18 +280,18 @@ if (!empty($query)) {
                 <thead>
                     <tr>
                         <th><input type="checkbox" name="check_all" id="check_all_request"><a href="javascript:;" class="generate-bulk-reports" data-bulkurl="<?php echo base_url('index.php/institute/generateBulkReports'); ?>"><img style="min-width: 15px; width: 25px; margin-left: 5px;" src="<?php echo base_url('assets/img/download-1.png'); ?>"></a><input type="hidden" name="bulk_report_ids"></th>
-                        <th>UL No.<br />Track No.</th>
-                        <th>Client<br />Clinic</th>
-                        <th>Batch<br />PCI No.</th>
+                        <th>Track No.</th>
+                        <th>Clinic</th>
+                        <th>Lab No.</th>
                         <th>Patient</th>
-                        <th>NHS No.<br />DOB</th>
+                        <th>NHS No./DOB</th>
                         <!-- <th>LAB No.<br />EMIS No.</th> -->
                         <!-- <th><i class="lnr lnr-layers" style="font-size:18px;"></i></th> -->
-                        <th>Detail</th>
+                        <th>View</th>
                         <th>Status</th>
                         <!-- <th>V.Report</th> -->
                         <!-- <th>D.Report</th> -->
-                        <th>Docs</th>
+                        <th>Report</th>
                     </tr>
                 </thead>
             </table>
@@ -303,10 +317,10 @@ $(document).ready(function() {
             },
         });
     });
-    // setTimeout(() => {
-    //     $('#display_new_records').DataTable().destroy();
-    //     $('#display_new_records').DataTable();
-    // }, 500);
+    setTimeout(() => {
+        $('#display_new_records').DataTable().destroy();
+        $('#display_new_records').DataTable();
+    }, 500);
     var type = "<?=$type;?>";
      var viewType = "<?=$viewType;?>";
     var url = window.location.href;
@@ -332,7 +346,7 @@ $(document).ready(function() {
         },
         "columnDefs": [
             {
-                "targets": [0],
+                "targets": [1, 2, 3, 4, 5, 6, 7, 8],
                 "orderable": false
             }
         ], 

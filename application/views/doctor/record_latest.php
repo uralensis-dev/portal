@@ -70,6 +70,20 @@ div.dataTables_wrapper div.dataTables_length select {
     .action_th_icon{
         float: right !important;
     }
+	
+	td a.hospital_initials {
+    display: block;
+    width: 30px;
+    height: 30px;
+    background: #1b75cd;
+    color: #ffffff;
+    text-align: center;
+    border-radius: 50%;
+    line-height: 30px;
+    font-size: 11px;
+    letter-spacing: -1px;
+}
+	
 </style>
 <div class="content tablewidth container-fluid publish-record">
         <div class="row">
@@ -135,7 +149,7 @@ div.dataTables_wrapper div.dataTables_length select {
                             </div>
                         </li>
 
-                        <li class="hide tg-flagcolor" style="padding: 3px 8px">
+                        <li class=" tg-flagcolor" style="padding: 3px 8px">
                             <div class="tg-checkboxgroup tg-checkboxgroupvtwo flags_check">
                                 <?php
 if ($this->session->userdata('color_code') !== '') {
@@ -251,7 +265,7 @@ if (empty($session_color)) {
                                 </span>
                             </div>
                         </li> -->
-                        <li class="hide tg-statusbar tg-flagcolor custome-flagcolors">
+                        <li class=" tg-statusbar tg-flagcolor custome-flagcolors">
                             <div class="tg-checkboxgroup tg-checkboxgroupvtwo">
 
                                 <span class="tg-radio tg-flagcolor4" title="Urgent">
@@ -323,9 +337,9 @@ if (empty($session_color)) {
                             </div>
                         </li> -->
                         <li class="">
-                            <a href="<?php echo base_url(); ?>doctor/published_reports/<?php echo date('Y') ?>/all/1" class="btn btn-success customBtn">Viewed</a>
-                            <a href="<?php echo base_url(); ?>doctor/published_reports/<?php echo date('Y') ?>/all/2" class="btn btn-success customBtn">Notviewed</a>
-                            <a href="<?php echo base_url(); ?>doctor/published_reports/<?php echo date('Y') ?>/all/3" class="btn btn-success customBtn">View All</a>
+                       <a href="<?php echo base_url(); ?>doctor/published_reports/<?php echo date('Y') ?>/all/2" class="btn btn-success customBtn">New</a>
+                       <a href="<?php echo base_url(); ?>doctor/published_reports/<?php echo date('Y') ?>/all/1" class="btn btn-success customBtn">Viewed</a>
+                            <a href="<?php echo base_url(); ?>doctor/published_reports/<?php echo date('Y') ?>/all/3" class="btn btn-success customBtn">All</a>
                         </li>
                         <li class="tg-statusbar tg-flagcolor custome-flagcolors last pull-right" style="padding: 0 10px;">
                             <button type="submit" class="btn btn-default adv-search" data-toggle="collapse" data-target="#collapse_adv_search"><i class="fa fa-cog"></i></button>
@@ -490,6 +504,7 @@ if ($this->session->flashdata('record_updated') != '') {
                             <!-- <th>PCI No.</th> -->
                             <!-- <th style="width:80px !important">Digi No.<br>Rec by Lab.</th> -->
                             <th>Clinic</th>
+                            <th>Clinician</th>
                             <th>
                                 <!-- <i class="lnr lnr-layers" style="font-size:18px;"></i> -->
                                 <img data-toggle="tooltip" title="Urgency"  src="<?php echo base_url('/assets/icons/Reported--UnReported.png'); ?>" class="img-responsive">
@@ -530,7 +545,7 @@ if ($this->session->flashdata('record_updated') != '') {
                             <th class="text-align:center">
                                 <img data-toggle="tooltip" title="Un-Published" src="<?php echo base_url('assets/icons/UnPublish.png'); ?>">
                             </th>
-                            <th>Clinician</th>
+                            
                             <th>Status</th>
                             <!-- <th>Action</th> -->
                         </tr>
