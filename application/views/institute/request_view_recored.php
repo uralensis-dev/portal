@@ -1215,6 +1215,15 @@ span.icon-try {
                         $record_old_count = floor($datediff / (60 * 60 * 24));
                       }
 
+
+                      $compare_date = strtotime($row->stDate);
+                      $datediff = $now - $compare_date;
+                      $record_old_count = floor($datediff / (60 * 60 * 24));
+
+                      if($row->stDate == ''){
+                        $record_old_count = 0;
+                      }
+
                       $badge = '';
                       if ($record_old_count <= 10) {
                         $badge = 'bg-success';

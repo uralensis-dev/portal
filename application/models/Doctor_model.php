@@ -325,10 +325,13 @@ Class Doctor_model extends CI_Model {
 		if (!$this->ion_auth->logged_in()) {
 			redirect('auth/login', 'refresh');
 		}
-		$query = $this->db->query("SELECT *, CASE WHEN request_assignee.user_id = $doctor_id THEN 'assigned' Else 'unassigned' END AS user_type FROM request
+		$subQuery = "(SELECT courier_id,created_date,MAX(id) Maxpath FROM  courier_tracking GROUP BY id) rq_as";
+		$query = $this->db->query("SELECT *,rq_as.created_date as stDate, CASE WHEN request_assignee.user_id = $doctor_id THEN 'assigned' Else 'unassigned' END AS user_type FROM request
             INNER JOIN request_assignee on request.uralensis_request_id = request_assignee.request_id
             LEFT JOIN `groups` ON `groups`.`id` = request.hospital_group_id
             LEFT JOIN users_request ON users_request.request_id = request.uralensis_request_id
+			LEFT JOIN tbl_courier ON tbl_courier.id=request.emis_number
+			LEFT JOIN $subQuery ON rq_as.courier_id =tbl_courier.id
             WHERE request_assignee.user_id=$doctor_id
             AND request.specimen_publish_status = 0
             AND request.supplementary_review_status = 'false' group by request.uralensis_request_id");
@@ -401,11 +404,13 @@ Class Doctor_model extends CI_Model {
 		//$filter .= " AND request.lab_id IN ($labIds)";
 		$filter .= " AND request.lab_id IN (114,115)";
 
-		$query = $this->db->query("SELECT *, CONCAT(AES_DECRYPT(users.first_name, '" . DATA_KEY . "'),' ' ,AES_DECRYPT(users.last_name, '" . DATA_KEY . "')) AS added_by, tbl_courier.courier_no as courier_number, count(DISTINCT(specimen.specimen_id)) as speciman_no FROM request
+		$subQuery = "(SELECT courier_id,created_date,MAX(id) Maxpath FROM  courier_tracking GROUP BY id) rq_as";
+		$query = $this->db->query("SELECT *, CONCAT(AES_DECRYPT(users.first_name, '" . DATA_KEY . "'),' ' ,AES_DECRYPT(users.last_name, '" . DATA_KEY . "')) AS added_by, tbl_courier.courier_no as courier_number, rq_as.created_date as stDate, count(DISTINCT(specimen.specimen_id)) as speciman_no FROM request
             INNER JOIN request_assignee
             /*LEFT JOIN section_comments ON section_comments.record_id=request.uralensis_request_id*/
             LEFT JOIN users ON request.request_add_user = users.id
             LEFT JOIN tbl_courier ON tbl_courier.id=request.emis_number
+			LEFT JOIN $subQuery ON rq_as.courier_id =tbl_courier.id
             LEFT JOIN specimen on specimen.request_id = request.uralensis_request_id
             WHERE request.uralensis_request_id = request_assignee.request_id
             AND request.specimen_publish_status = 0

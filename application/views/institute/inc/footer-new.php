@@ -45,6 +45,13 @@
 
 <script src="<?php echo base_url() ?>/assets/js/jquery.dataTables.min.js"></script>
 <script src="<?php echo base_url() ?>/assets/newtheme/js/dataTables.bootstrap4.min.js"></script>
+
+<script src="<?php echo base_url('/assets/newtheme/js/dataTables.buttons.min.js'); ?>"></script>
+<script src="<?php echo base_url('/assets/newtheme/js/buttons.html5.min.js'); ?>"></script>
+<script src="<?php echo base_url('/assets/newtheme/js/pdfmake.min.js'); ?>"></script>
+<script src="<?php echo base_url('/assets/newtheme/js/vfs_fonts.js'); ?>"></script>   
+<script src="<?php echo base_url('/assets/newtheme/js/jszip.min.js'); ?>"></script>
+
 <?php $this->load->view("session");?>
 <script src="<?php echo base_url() ?>/assets/js/select2.min.js"></script>
 <script src="<?php echo base_url('/assets/js/scrollbar.min.js'); ?>"></script>

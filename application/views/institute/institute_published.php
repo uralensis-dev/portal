@@ -1,4 +1,5 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');?>
+<script src="https://cdn.datatables.net/buttons/2.3.4/js/dataTables.buttons.min.js"></script>
 <style type="text/css">
     /*.container-fluid{
         margin-left: 20px;
@@ -67,6 +68,14 @@
     line-height: 30px;
     font-size: 11px;
     letter-spacing: -1px;
+}
+.dt-button {
+    border-radius: 4px;
+    border: 1px solid #00c5fb;
+    font-size: 13px;
+    padding: 8px 20px;
+    background-color: #00c5fb;
+    color: #fff;
 }
 </style>
 <div class="container-fluid">
@@ -276,6 +285,7 @@ if (!empty($query)) {
     <div class="row">
         <div class="col-md-12">
             <?php echo $this->session->flashdata('record-msg'); ?>
+            <div id="btn-place" style="margin: 10px 0px;"></div>
             <table id="display_new_records" class="table table-striped">
                 <thead>
                     <tr>
@@ -290,7 +300,7 @@ if (!empty($query)) {
                         <th>View</th>
                         <th>Status</th>
                         <!-- <th>V.Report</th> -->
-                        <!-- <th>D.Report</th> -->
+                        <th>TAT</th>
                         <th>Report</th>
                     </tr>
                 </thead>
@@ -317,21 +327,25 @@ $(document).ready(function() {
             },
         });
     });
-    setTimeout(() => {
-        $('#display_new_records').DataTable().destroy();
-        $('#display_new_records').DataTable();
-    }, 500);
+    // setTimeout(() => {
+    //     $('#display_new_records').DataTable().destroy();
+    //     $('#display_new_records').DataTable();
+    // }, 500);
     var type = "<?=$type;?>";
      var viewType = "<?=$viewType;?>";
     var url = window.location.href;
     var url_year = url.split('/').reverse()[0];
-    $('#display_new_records').DataTable({
+    oTable = $('#display_new_records').DataTable({
         "processing": true,
         "serverSide": true,
 		"searching": true,
         // stateSave: true,
         "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         "order": [],
+        dom: 'Bfrtip',
+        "buttons": [
+                'excel'
+        ],
         "language": {
             "infoFiltered": ""
         },
@@ -351,6 +365,7 @@ $(document).ready(function() {
             }
         ], 
     });
+    $('#btn-place').html(oTable.buttons().container()); 
 
     $('#check_all_request').change(function(){
         var all_br = $(this).prop('checked');

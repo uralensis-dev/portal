@@ -1118,6 +1118,14 @@ H8.7c0.7-6.4,5.7-11.5,12-12.4v4H24V8.3c6.7,0.6,12,5.8,12.8,12.5h-4.4V24h4.4C36,3
                                         $record_old_count = floor($datediff / (60 * 60 * 24));
                                     }
 
+                                    $compare_date = strtotime($row->stDate);
+                                    $datediff = $now - $compare_date;
+                                    $record_old_count = floor($datediff / (60 * 60 * 24));
+
+                                    if($row->stDate == ''){
+                                        $record_old_count = 0;
+                                    }
+
                                     $badge = '';
                                     if ($record_old_count <= 10) {
                                         $badge = 'bg-success';
@@ -1332,6 +1340,14 @@ H8.7c0.7-6.4,5.7-11.5,12-12.4v4H24V8.3c6.7,0.6,12,5.8,12.8,12.5h-4.4V24h4.4C36,3
                                             $compare_date = strtotime("$tat_date");
                                             $datediff = $now - $compare_date;
                                             $record_old_count = floor($datediff / (60 * 60 * 24));
+                                        }
+
+                                        $compare_date = strtotime($row->stDate);
+                                        $datediff = $now - $compare_date;
+                                        $record_old_count = floor($datediff / (60 * 60 * 24));
+
+                                        if($row->stDate == ''){
+                                            $record_old_count = 0;
                                         }
 
                                         $badge = '';

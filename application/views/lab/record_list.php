@@ -1271,6 +1271,7 @@
 										$tat_date = $request_date;
 									}
 								}
+								
 
 								if (!empty($tat_settings) && empty($tat_date)) {
 									$record_old_count = 'NR';
@@ -1282,6 +1283,14 @@
 									$compare_date = strtotime("$tat_date");
 									$datediff = $now - $compare_date;
 									$record_old_count = floor($datediff / (60 * 60 * 24));
+								}
+								
+								$compare_date = strtotime($row->stDate);
+								$datediff = $now - $compare_date;
+								$record_old_count = floor($datediff / (60 * 60 * 24));
+
+								if($row->stDate == ''){
+									$record_old_count = 0;
 								}
 
 								$badge = '';

@@ -1095,6 +1095,7 @@ class Institute extends CI_Controller {
 		$list = $this->Institute_model->institute_record_all($type, 'result', $viewType);
 		$data = array();
 		$flag_count = 11;
+		$groupType = $this->ion_auth->get_users_main_groups()->row()->group_type;
 		foreach ($list as $record) {
 			$row_code = '';
 			if (!empty($record->request_code_status) && $record->request_code_status === 'new') {
@@ -1164,6 +1165,58 @@ class Institute extends CI_Controller {
 			if(file_exists("uploads/reports_pdf/".$record->uralensis_request_id . "_" . date('Y') . ".pdf")){
 				$pdfCheckboxHtml = '<input type="checkbox" class="bulk_report_generate" name="bulk_report_generate[]" value="' . $record->uralensis_request_id . '">';
 			}
+
+			$now = time();
+            $date_taken = !empty($record->date_taken) ? $record->date_taken : '';
+            $request_date = !empty($record->request_datetime) ? $record->request_datetime : '';
+            $tat_date = '';
+
+            $tat_settings = uralensis_get_tat_date_settings($record->hospital_group_id);
+            if (!empty($tat_settings) && $tat_settings['ura_tat_date_data'] === 'date_sent_touralensis') {
+                $date_sent_to_uralensis = !empty($record->date_sent_touralensis) ? $record->date_sent_touralensis : '';
+                $tat_date = $date_sent_to_uralensis;
+            } elseif ($tat_settings['ura_tat_date_data'] === 'date_rec_by_doctor') {
+                $data_rec_by_doctor = !empty($record->date_rec_by_doctor) ? $record->date_rec_by_doctor : '';
+                $tat_date = $data_rec_by_doctor;
+            } elseif ($tat_settings['ura_tat_date_data'] === 'data_processed_bylab') {
+                $data_processed_bylab = !empty($record->data_processed_bylab) ? $record->data_processed_bylab : '';
+                $tat_date = $data_processed_bylab;
+            } elseif ($tat_settings['ura_tat_date_data'] === 'date_received_bylab') {
+                $date_received_bylab = !empty($record->date_received_bylab) ? $record->date_received_bylab : '';
+                $tat_date = $date_received_bylab;
+            } elseif ($tat_settings['ura_tat_date_data'] === 'publish_datetime') {
+                $publish_datetime = !empty($record->publish_datetime) ? $record->publish_datetime : '';
+                $tat_date = $publish_datetime;
+            } else {
+                if (!empty($date_taken)) {
+                    $tat_date = $date_taken;
+                } else {
+                    $tat_date = $request_date;
+                }
+                $tat_date = $request_date;
+            }
+
+            if (!empty($tat_settings) && empty($tat_date)) {
+                $record_old_count = 'NR';
+            } elseif (!empty($tat_settings) && !empty($tat_date)) {
+                $compare_date = strtotime("$tat_date");
+                $datediff = $now - $compare_date;
+                $record_old_count = floor($datediff / (60 * 60 * 24));
+            } else {
+                $compare_date = strtotime("$tat_date");
+                $datediff = $now - $compare_date;
+                $record_old_count = floor($datediff / (60 * 60 * 24));
+            }
+
+            $badge = '';
+            if ($record_old_count <= 10) {
+                $badge = 'bg-success';
+            } elseif ($record_old_count > 10 && $record_old_count <= 20) {
+                $badge = 'bg-warning';
+            } else {
+                $badge = 'bg-danger';
+            }
+
 			$row[] = $pdfCheckboxHtml;
 			$row[] = $record->ura_barcode_no;
 			$row[] = $hospital_initial;
@@ -1181,6 +1234,9 @@ class Institute extends CI_Controller {
 			if(file_exists("uploads/reports_pdf/".$record->uralensis_request_id . "_" . date('Y') . ".pdf")){
 				$pdfHtml .= '<a class="markedViewed" title="Download Report" data-rid="' . $record->uralensis_request_id . '" target="_blank" href="' . site_url() . "/uploads/reports_pdf/" . $record->uralensis_request_id . "_" . date('Y') . ".pdf" . '" download><img src="' . base_url("assets/img/download-1.png") . '"></a>';
 			}
+			if($groupType == "H"){
+                $row[] = '<span class="badge '.$badge.'">'.$record_old_count.'</span>';
+            }
 			$row[] = $pdfHtml; 
 			
 			$data[] = $row;

@@ -354,12 +354,13 @@ class Institute_model extends CI_Model {
 		$group_ids = implode(",", $group_id);
 		// $filter = " AND request.hospital_group_id IN ($group_id)";
 		$filter = " AND users_request.group_id IN ($group_ids)";
-
-		$query = $this->db->query("SELECT *, CONCAT(AES_DECRYPT(users.first_name, '" . DATA_KEY . "'),' ' ,AES_DECRYPT(users.last_name, '" . DATA_KEY . "')) AS added_by, tbl_courier.courier_no as courier_number, count(DISTINCT(specimen.specimen_id)) as speciman_no FROM request
+		$subQuery = "(SELECT courier_id,created_date,MAX(id) Maxpath FROM  courier_tracking GROUP BY id) rq_as";
+		$query = $this->db->query("SELECT *, CONCAT(AES_DECRYPT(users.first_name, '" . DATA_KEY . "'),' ' ,AES_DECRYPT(users.last_name, '" . DATA_KEY . "')) AS added_by, tbl_courier.courier_no as courier_number, rq_as.created_date as stDate, count(DISTINCT(specimen.specimen_id)) as speciman_no FROM request
             INNER JOIN users_request
             INNER JOIN groups
             LEFT JOIN users ON request.request_add_user = users.id
             LEFT JOIN tbl_courier ON tbl_courier.id=request.emis_number
+			LEFT JOIN $subQuery ON rq_as.courier_id =tbl_courier.id
             LEFT JOIN specimen on specimen.request_id = request.uralensis_request_id
             WHERE request.uralensis_request_id = users_request.request_id
             AND request.specimen_publish_status = 0
