@@ -1,5 +1,5 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');?>
-<script src="https://cdn.datatables.net/buttons/2.3.4/js/dataTables.buttons.min.js"></script>
+<!-- <script src="https://cdn.datatables.net/buttons/2.3.4/js/dataTables.buttons.min.js"></script> -->
 <style type="text/css">
     /*.container-fluid{
         margin-left: 20px;
@@ -327,10 +327,15 @@ $(document).ready(function() {
             },
         });
     });
-    // setTimeout(() => {
-    //     $('#display_new_records').DataTable().destroy();
-    //     $('#display_new_records').DataTable();
-    // }, 500);
+    setTimeout(() => {
+        $('#display_new_records').DataTable().destroy();
+        $('#display_new_records').DataTable({
+            dom: 'Bfrtip',
+            "buttons": [
+                    'excel'
+            ],
+        });
+    }, 500);
     var type = "<?=$type;?>";
      var viewType = "<?=$viewType;?>";
     var url = window.location.href;
