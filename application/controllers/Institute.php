@@ -1195,6 +1195,7 @@ class Institute extends CI_Controller {
                 }
                 $tat_date = $request_date;
             }
+			
 
             if (!empty($tat_settings) && empty($tat_date)) {
                 $record_old_count = 'NR';
@@ -1207,6 +1208,13 @@ class Institute extends CI_Controller {
                 $datediff = $now - $compare_date;
                 $record_old_count = floor($datediff / (60 * 60 * 24));
             }
+
+			$collectionDates = !empty($record->collection_date_custom) ? $record->collection_date_custom : '';
+			if($collectionDates != ''){
+				$compare_date = strtotime("$collectionDates");
+				$datediff = $now - $compare_date;
+				$record_old_count = floor($datediff / (60 * 60 * 24));
+			}
 
             $badge = '';
             if ($record_old_count <= 10) {

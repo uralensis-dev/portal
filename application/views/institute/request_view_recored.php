@@ -1201,6 +1201,7 @@ span.icon-try {
                         } else {
                           $tat_date = $request_date;
                         }
+                        $tat_date = $request_date;
                       }
 
                       if (!empty($tat_settings) && empty($tat_date)) {
@@ -1222,6 +1223,13 @@ span.icon-try {
 
                       if($row->stDate == ''){
                         $record_old_count = 0;
+                      }
+
+                      $collectionDates = !empty($row->collection_date_custom) ? $row->collection_date_custom : '';
+                      if($collectionDates != ''){
+                          $compare_date = strtotime("$collectionDates");
+                          $datediff = $now - $compare_date;
+                          $record_old_count = floor($datediff / (60 * 60 * 24));
                       }
 
                       $badge = '';

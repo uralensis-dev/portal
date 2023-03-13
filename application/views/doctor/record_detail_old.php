@@ -1135,6 +1135,14 @@ $disableDiv = " ";
                                         $record_old_count = floor($datediff / (60 * 60 * 24));
                                     }
 
+                                    $compare_date = strtotime($request_query[0]->stDate);
+                                    $collectionDates = !empty($request_query[0]->collection_date_custom) ? $request_query[0]->collection_date_custom : '';
+                                    if($collectionDates != ''){
+                                        $compare_date = strtotime("$collectionDates");
+                                    }
+                                    $datediff = $now - $compare_date;
+                                    $record_old_count = floor($datediff / (60 * 60 * 24));
+
                                     $badge = '';
                                     if ($record_old_count <= 10) {
                                         $badge = 'bg-success';
@@ -3369,6 +3377,37 @@ $dr_full_name = $Usersgetdatils[0]->first_name . '&nbsp;' . $Usersgetdatils[0]->
                                                 </div>
                                                 <?php $json['report_urgency'] = $row->report_urgency; ?>
                                             </div>
+                                            <div class="form-group col-md-3">
+                                                <label for="date_collectionDate">Collection Date</label>
+                                                <div class="form_input_container" data-key="date_collectionDate">
+                                                    <div class="radial_btn_container change_status_color">
+                                                        <svg class="svg_date_collectionDate" width="26" height="26">
+                                                            <circle cx="13" cy="13" r="12"
+                                                                    stroke="<?php echo $color_status; ?>"
+                                                                    fill-opacity="0" stroke-width="1"/>
+                                                            <circle cx="13" cy="13" r="7"
+                                                                    stroke="<?php echo $color_status; ?>"
+                                                                    fill="<?php echo $color_status; ?>"
+                                                                    stroke-width="2"/>
+                                                        </svg>
+
+                                                    </div>
+                                                    <?php
+                                                    $collection_date = '';
+                                                    if (!empty($row->collection_date)) {
+                                                        $collection_date = date('d-m-Y', strtotime($row->collection_date));
+                                                    } else {
+                                                        if (!empty($bck_frm_lab_date_data)) {
+                                                            $collection_date = date('d-m-Y', strtotime($bck_frm_lab_date_data));
+                                                        }
+                                                    }
+                                                    ?>
+                                                    <input type="text" onblur="save_case_request(this.id)" name="collection_date" class="form_input"
+                                                           id="collection_date" placeholder="Collection Date"
+                                                           value="<?php echo $collection_date; ?>" autocomplete="off"/>
+                                                </div>
+                                                <?php $json['collection_date'] = date('d-m-Y', strtotime($collection_date)); ?>
+                                            </div>                
                                             <div class="form-group col-md-12">
                                                 <span class="">
                                                     <label> Copy to &nbsp;<a href="javascript:void(0);" class="add_new_clinician" title="Add New Clinician" data-toggle="modal" data-target="#add_clinician_modal">

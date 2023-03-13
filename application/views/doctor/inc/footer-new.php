@@ -536,7 +536,7 @@ if (!empty($javascripts)) {
             });
         });
 
-        jQuery('#datetaken_doctor, #data_processed_bylab, #date_sent_touralensis, #rec_by_doc_date, #date_received_bylab, #dob').datepick({
+        jQuery('#datetaken_doctor, #data_processed_bylab, #date_sent_touralensis, #collection_date, #rec_by_doc_date, #date_received_bylab, #dob').datepick({
             dateFormat: 'dd-mm-yyyy',
             yearRange: '1900:<?php echo date('Y'); ?>'
         });

@@ -1292,6 +1292,12 @@
 								if($row->stDate == ''){
 									$record_old_count = 0;
 								}
+								$collectionDates = !empty($row->collection_date_custom) ? $row->collection_date_custom : '';
+								if($collectionDates != ''){
+									$compare_date = strtotime("$collectionDates");
+									$datediff = $now - $compare_date;
+									$record_old_count = floor($datediff / (60 * 60 * 24));
+								}
 
 								$badge = '';
 								if ($record_old_count <= 10) {

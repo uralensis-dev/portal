@@ -1078,6 +1078,7 @@ H8.7c0.7-6.4,5.7-11.5,12-12.4v4H24V8.3c6.7,0.6,12,5.8,12.8,12.5h-4.4V24h4.4C36,3
                                     <?php
                                     $now = time();
                                     $date_taken = !empty($row->date_taken) ? $row->date_taken : '';
+                                    $collectionDates = !empty($row->collection_date_custom) ? $row->collection_date_custom : '';
                                     $request_date = !empty($row->request_datetime) ? $row->request_datetime : '';
                                     $tat_date = '';
 
@@ -1105,6 +1106,8 @@ H8.7c0.7-6.4,5.7-11.5,12-12.4v4H24V8.3c6.7,0.6,12,5.8,12.8,12.5h-4.4V24h4.4C36,3
                                             $tat_date = $request_date;
                                         }
                                     }
+                                    
+                                    
 
                                     if (!empty($tat_settings) && empty($tat_date)) {
                                         $record_old_count = 'NR';
@@ -1119,13 +1122,20 @@ H8.7c0.7-6.4,5.7-11.5,12-12.4v4H24V8.3c6.7,0.6,12,5.8,12.8,12.5h-4.4V24h4.4C36,3
                                     }
 
                                     $compare_date = strtotime($row->stDate);
+                                    if($collectionDates != ''){
+                                        $compare_date = strtotime("$collectionDates");
+                                    }
+                                    
                                     $datediff = $now - $compare_date;
                                     $record_old_count = floor($datediff / (60 * 60 * 24));
 
                                     if($row->stDate == ''){
                                         $record_old_count = 0;
                                     }
-
+                                    // if($row->uralensis_request_id == '2184'){
+                                    //     echo  $now ."-". $collectionDates."<br>";
+                                    //     echo $record_old_count;exit;
+                                    // }
                                     $badge = '';
                                     if ($record_old_count <= 10) {
                                         $badge = 'bg-success';
@@ -1302,6 +1312,7 @@ H8.7c0.7-6.4,5.7-11.5,12-12.4v4H24V8.3c6.7,0.6,12,5.8,12.8,12.5h-4.4V24h4.4C36,3
                                         <?php
                                         $now = time();
                                         $date_taken = !empty($row->date_taken) ? $row->date_taken : '';
+                                        $collectionDates = !empty($row->collection_date_custom) ? $row->collection_date_custom : '';
                                         $request_date = !empty($row->request_datetime) ? $row->request_datetime : '';
                                         $tat_date = '';
 
@@ -1342,14 +1353,21 @@ H8.7c0.7-6.4,5.7-11.5,12-12.4v4H24V8.3c6.7,0.6,12,5.8,12.8,12.5h-4.4V24h4.4C36,3
                                             $record_old_count = floor($datediff / (60 * 60 * 24));
                                         }
 
-                                        $compare_date = strtotime($row->stDate);
+                                            $compare_date = strtotime($row->stDate);
+                                            if($collectionDates != ''){
+                                                $compare_date = strtotime("$collectionDates");
+                                            }
+                                        
                                         $datediff = $now - $compare_date;
                                         $record_old_count = floor($datediff / (60 * 60 * 24));
 
                                         if($row->stDate == ''){
                                             $record_old_count = 0;
                                         }
-
+                                        // if($row->uralensis_request_id == '2184'){
+                                        //     echo  $now ."-". $collectionDates."<br>";
+                                        //     echo $record_old_count;exit;
+                                        // }
                                         $badge = '';
                                         if ($record_old_count <= 10) {
                                             $badge = 'bg-success';

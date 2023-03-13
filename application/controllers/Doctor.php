@@ -7578,7 +7578,7 @@ Class Doctor extends CI_Controller {
 			'pci_number' => $_POST['pci_number'],
 			'speciman_no' => $_POST['specimen_no'],
 			'record_batch_id' => $_POST['courier_no'],
-
+			'collection_date' => date("Y-m-d", strtotime($_POST['collection_date'])),
 		);
 		$record_id = $_POST['patient_id'];
 		$this->db->where('patient_id', $record_id);
