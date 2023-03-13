@@ -355,7 +355,7 @@ class Institute_model extends CI_Model {
 		// $filter = " AND request.hospital_group_id IN ($group_id)";
 		$filter = " AND users_request.group_id IN ($group_ids)";
 		$subQuery = "(SELECT courier_id,created_date,MAX(id) Maxpath FROM  courier_tracking GROUP BY id) rq_as";
-		$query = $this->db->query("SELECT *, CONCAT(AES_DECRYPT(users.first_name, '" . DATA_KEY . "'),' ' ,AES_DECRYPT(users.last_name, '" . DATA_KEY . "')) AS added_by, tbl_courier.courier_no as courier_number, rq_as.created_date as stDate, count(DISTINCT(specimen.specimen_id)) as speciman_no, request.collection_date as collection_date_custom FROM request
+		$query = $this->db->query("SELECT *, CONCAT(AES_DECRYPT(users.first_name, '" . DATA_KEY . "'),' ' ,AES_DECRYPT(users.last_name, '" . DATA_KEY . "')) AS added_by, tbl_courier.courier_no as courier_number, request.request_datetime as stDate, count(DISTINCT(specimen.specimen_id)) as speciman_no, tbl_courier.collection_date as collection_date_custom FROM request
             INNER JOIN users_request
             INNER JOIN groups
             LEFT JOIN users ON request.request_add_user = users.id
@@ -789,9 +789,10 @@ class Institute_model extends CI_Model {
 				$viewtypeStatus = " AND request.is_viewed = $viewType";
 			}
 		}
-		$sql = "SELECT *, request.collection_date as collection_date_custom FROM request
+		$sql = "SELECT *, tbl_courier.collection_date as collection_date_custom FROM request
       INNER JOIN users_request
       INNER JOIN `groups`
+	  LEFT JOIN tbl_courier ON tbl_courier.id=request.emis_number
       WHERE users_request.request_id = request.uralensis_request_id
       AND groups.id = users_request.group_id
       AND users_request.group_id IN($group_ids)
@@ -3293,9 +3294,9 @@ class Institute_model extends CI_Model {
                            CONCAT(g2.first_initial,g2.last_initial) as receiver_org,
                            AES_DECRYPT(users.first_name, '" . DATA_KEY . "') AS ufirst_name,
                            AES_DECRYPT(users.last_name, '" . DATA_KEY . "') AS ulast_name,
-                           GROUP_CONCAT(u2f.file_name) as filesnames,
-                           GROUP_CONCAT(u2f.file_path) as filespaths,
-                           GROUP_CONCAT(u2f.id) as filesIds,
+                           GROUP_CONCAT(DISTINCT u2f.file_name) as filesnames,
+                           GROUP_CONCAT(DISTINCT u2f.file_path) as filespaths,
+                           GROUP_CONCAT(DISTINCT u2f.id) as filesIds,
                            ");
 		$this->db->from('tbl_courier');
 		$this->db->join('courier_companies', 'courier_companies.id=tbl_courier.courier_company', 'LEFT');

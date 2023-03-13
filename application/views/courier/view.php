@@ -116,6 +116,40 @@ $courierStatus = array(
     left: 340px;
 }
 
+#cover-spin {
+    position:fixed;
+    width:100%;
+    left:0;right:0;top:0;bottom:0;
+    background-color: rgba(255,255,255,0.7);
+    z-index:9999;
+    display:none;
+}
+
+@-webkit-keyframes spin {
+	from {-webkit-transform:rotate(0deg);}
+	to {-webkit-transform:rotate(360deg);}
+}
+
+@keyframes spin {
+	from {transform:rotate(0deg);}
+	to {transform:rotate(360deg);}
+}
+
+#cover-spin::after {
+    content:'';
+    display:block;
+    position:absolute;
+    left:48%;top:40%;
+    width:40px;height:40px;
+    border-style:solid;
+    border-color:#00c5fb;
+    border-top-color:transparent;
+    border-width: 4px;
+    border-radius:50%;
+    -webkit-animation: spin .8s linear infinite;
+    animation: spin .8s linear infinite;
+}
+
 /* @media (min-width: 992px){
     max-width: 920px;
 } */
@@ -1457,6 +1491,7 @@ foreach ($get_active_users as $auser) {?>
         </div>
     </div>
 </div>
+<div id="cover-spin"></div>
 
 <script type="text/javascript">
     $(document).ready(function(){
@@ -1530,6 +1565,7 @@ foreach ($get_active_users as $auser) {?>
         $("#EditUploadedFiles").on('submit',(function(e) {
             e.preventDefault();
             var cid = $('#fedit_id').val();
+            $('#cover-spin').show();
             $.ajax({
                 url: base_url+"AddCourier/addFiles",
                 type: "POST",
@@ -1545,6 +1581,7 @@ foreach ($get_active_users as $auser) {?>
                     // $('#view_checklist_items').modal('hide');
                     setTimeout(() => {
                         AppendFiles( $('.viewCheckList_' + cid));
+                        $('#cover-spin').hide();
                         $.sticky("File has been uploaded successfully!!!", {
                             classList: 'success',
                             speed: 200,
@@ -1555,6 +1592,7 @@ foreach ($get_active_users as $auser) {?>
                 },
                 error: function(e)
                 {
+                    $('#cover-spin').hide();
                     $.sticky("Something went wrong. Please try again!", {
                             classList: 'important',
                             speed: 200,

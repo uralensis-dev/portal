@@ -326,7 +326,7 @@ Class Doctor_model extends CI_Model {
 			redirect('auth/login', 'refresh');
 		}
 		$subQuery = "(SELECT courier_id,created_date,MAX(id) Maxpath FROM  courier_tracking GROUP BY id) rq_as";
-		$query = $this->db->query("SELECT *,rq_as.created_date as stDate,request.collection_date as collection_date_custom, CASE WHEN request_assignee.user_id = $doctor_id THEN 'assigned' Else 'unassigned' END AS user_type FROM request
+		$query = $this->db->query("SELECT *,request.request_datetime as stDate,tbl_courier.collection_date as collection_date_custom, CASE WHEN request_assignee.user_id = $doctor_id THEN 'assigned' Else 'unassigned' END AS user_type FROM request
             INNER JOIN request_assignee on request.uralensis_request_id = request_assignee.request_id
             LEFT JOIN `groups` ON `groups`.`id` = request.hospital_group_id
             LEFT JOIN users_request ON users_request.request_id = request.uralensis_request_id
@@ -405,7 +405,7 @@ Class Doctor_model extends CI_Model {
 		$filter .= " AND request.lab_id IN (114,115)";
 
 		$subQuery = "(SELECT courier_id,created_date,MAX(id) Maxpath FROM  courier_tracking GROUP BY id) rq_as";
-		$query = $this->db->query("SELECT *, CONCAT(AES_DECRYPT(users.first_name, '" . DATA_KEY . "'),' ' ,AES_DECRYPT(users.last_name, '" . DATA_KEY . "')) AS added_by, tbl_courier.courier_no as courier_number, rq_as.created_date as stDate, count(DISTINCT(specimen.specimen_id)) as speciman_no, request.collection_date as collection_date_custom FROM request
+		$query = $this->db->query("SELECT *, CONCAT(AES_DECRYPT(users.first_name, '" . DATA_KEY . "'),' ' ,AES_DECRYPT(users.last_name, '" . DATA_KEY . "')) AS added_by, tbl_courier.courier_no as courier_number, request.request_datetime as stDate, count(DISTINCT(specimen.specimen_id)) as speciman_no, tbl_courier.collection_date as collection_date_custom FROM request
             INNER JOIN request_assignee
             /*LEFT JOIN section_comments ON section_comments.record_id=request.uralensis_request_id*/
             LEFT JOIN users ON request.request_add_user = users.id
@@ -675,7 +675,7 @@ Class Doctor_model extends CI_Model {
         cases_category, cost_codes, flag_status, authorize_status, request_add_user,
         request_add_user_timestamp, clinic_ref_number, clinic_request_form,request.collection_date,
         request_code_status, record_edit_status, ura_rec_temp_dataset, remote_record, `location`, `apd`.*, `vrd`.*, urtt.courier_no, urtt.billing_type,request.ref_lab_number,
-		request.collection_date as collection_date_custom, rq_as.created_date as stDate 
+		tbl_courier.collection_date as collection_date_custom, request.request_datetime as stDate 
         FROM request
         INNER JOIN request_assignee ON request_assignee.request_id = request.uralensis_request_id
         LEFT JOIN request_autopsy_detail apd ON apd.request_id = request.uralensis_request_id
@@ -770,11 +770,12 @@ Class Doctor_model extends CI_Model {
                 specimen_feedback_to_lab, specimen_feedback_to_lab_timestamp,
                 specimen_feedback_to_secretary, specimen_feedback_to_secretary_timestamp,
                 specimen_error_log, specimen_error_log_timestamp,
-                rbc.billing_type, rbc.bill_code, rbc.bill_code_text, rbc.billing_type, rbc.bill_description, rbc.bill_price,urtt.billing_type as billing_type2, urtt.specimen_id_val as specimen_id_val, urtt.tissue_type_id, urtt.department_id, request.collection_date as collection_date_custom
+                rbc.billing_type, rbc.bill_code, rbc.bill_code_text, rbc.billing_type, rbc.bill_description, rbc.bill_price,urtt.billing_type as billing_type2, urtt.specimen_id_val as specimen_id_val, urtt.tissue_type_id, urtt.department_id, tbl_courier.collection_date as collection_date_custom
                  FROM request
             INNER JOIN specimen
             INNER JOIN users
             INNER JOIN request_assignee
+			LEFT JOIN tbl_courier ON tbl_courier.id=request.emis_number
             LEFT JOIN uralensis_record_track_template as urtt ON urtt.ura_rec_temp_id=request.template_id
             LEFT JOIN request_billing_code as rbc ON rbc.request_id=request.uralensis_request_id AND rbc.specimen_id=specimen.specimen_id
             WHERE request.uralensis_request_id = $id

@@ -744,9 +744,9 @@ class AddCourier extends CI_Controller {
 			}
 
 			if ($type == 'edit') {
-				$recordInfo = $this->db->query("SELECT GROUP_CONCAT(u2f.file_name) as filesnames,
-                GROUP_CONCAT(u2f.file_path) as filespaths,
-                GROUP_CONCAT(u2f.id) as filesIds FROM uralensis_upload_forms as u2f INNER JOIN tbl_courier on tbl_courier.id = u2f.courier_id WHERE tbl_courier.id = $courier_id ")->row_array();
+				$recordInfo = $this->db->query("SELECT GROUP_CONCAT(DISTINCT u2f.file_name) as filesnames,
+                GROUP_CONCAT(DISTINCT u2f.file_path) as filespaths,
+                GROUP_CONCAT(DISTINCT u2f.id) as filesIds FROM uralensis_upload_forms as u2f INNER JOIN tbl_courier on tbl_courier.id = u2f.courier_id WHERE tbl_courier.id = $courier_id ")->row_array();
 				$jsonResult['fileInfo'] = $recordInfo;
 				echo json_encode($jsonResult);
 				exit;
@@ -891,11 +891,13 @@ class AddCourier extends CI_Controller {
 
 		$fileInfo = $this->db->where(array("id" => $this->input->post('fid')))->select("*")->get("uralensis_upload_forms")->row_array();
 		if (count($fileInfo) > 0) {
+			// $this->db->delete('uralensis_upload_forms', ['id' => $this->input->post('fid')]);
+			
 			if ($this->db->delete('uralensis_upload_forms', ['id' => $this->input->post('fid')])) {
 				unlink($_SERVER['DOCUMENT_ROOT'] . "/" . $fileInfo['file_path']);
-				$remainingInfo = $this->db->where(array("courier_id" => $this->input->post('cid')))->select("GROUP_CONCAT(u2f.file_name) as filesnames,
-                GROUP_CONCAT(u2f.file_path) as filespaths,
-                GROUP_CONCAT(u2f.id) as filesIds")->get("uralensis_upload_forms u2f")->row_array();
+				$remainingInfo = $this->db->where(array("courier_id" => $this->input->post('cid')))->select("GROUP_CONCAT(DISTINCT u2f.file_name) as filesnames,
+                GROUP_CONCAT(DISTINCT u2f.file_path) as filespaths,
+                GROUP_CONCAT(DISTINCT u2f.id) as filesIds")->get("uralensis_upload_forms u2f");
 				$result['status'] = 'success';
 				$result['filesnames'] = $remainingInfo['filesnames'];
 				$result['filespaths'] = $remainingInfo['filespaths'];

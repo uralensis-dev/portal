@@ -7538,7 +7538,7 @@ Class Doctor extends CI_Controller {
 		$user_id = $this->ion_auth->user()->row()->id;
 		$input_key = $_POST['key'];
 
-		$edit_status_query = $this->db->query("SELECT request.record_edit_status FROM request WHERE request.uralensis_request_id = $record_id")->result();
+		$edit_status_query = $this->db->query("SELECT emis_number,request.record_edit_status FROM request WHERE request.uralensis_request_id = $record_id")->result();
 		$default_edit_status = unserialize($edit_status_query[0]->record_edit_status);
 		if (!empty($default_edit_status) && array_key_exists($input_key, $default_edit_status)) {
 			$default_edit_status[$input_key] = 2;
@@ -7600,6 +7600,13 @@ Class Doctor extends CI_Controller {
 		$record_id = $_POST['patient_id'];
 		$this->db->where('id', $record_id);
 		$this->db->update('patients', $Pdata);
+
+		$courierData = array(
+			'collection_date' => date("Y-m-d H:i:s", strtotime($_POST['collection_date'])),
+		);
+		$trecord_id = $edit_status_query[0]->emis_number;
+		$this->db->where('id', $trecord_id);
+		$this->db->update('tbl_courier', $courierData);
 
 		if (isset($_POST['copy_to'])) {
 			if (count($_POST['copy_to']) > 0) {

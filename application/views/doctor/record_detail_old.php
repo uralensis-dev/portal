@@ -3394,8 +3394,8 @@ $dr_full_name = $Usersgetdatils[0]->first_name . '&nbsp;' . $Usersgetdatils[0]->
                                                     </div>
                                                     <?php
                                                     $collection_date = '';
-                                                    if (!empty($row->collection_date)) {
-                                                        $collection_date = date('d-m-Y', strtotime($row->collection_date));
+                                                    if (!empty($row->collection_date_custom)) {
+                                                        $collection_date = date('d-m-Y', strtotime($row->collection_date_custom));
                                                     } else {
                                                         if (!empty($bck_frm_lab_date_data)) {
                                                             $collection_date = date('d-m-Y', strtotime($bck_frm_lab_date_data));
